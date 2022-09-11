@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "hardhat/console.sol";
 import "./IPancakeRouter.sol";
 import "./IPancakePair.sol";
 import "./TaxableRouter.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
 
 library PancakeLibrary {
     using SafeMath for uint;
@@ -106,7 +104,7 @@ library TransferHelper {
     }
 }
 
-contract TcpRouter is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
+contract CCMRouter is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
     using SafeMath for uint;
 
     address public pcsRouter;
@@ -134,7 +132,19 @@ contract TcpRouter is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-        require(false, "Coming soon");
+        // We have to check if WETH is within this path.
+        // If that's the case we want to (potentially) take taxes on that.
+        // If we have the following path for example: CCMT => WBNB => CAKE
+        // Then we may want to take sell taxes for CCMT and buy taxes for CAKE.
+        // So what we do is to split up the token path, take the taxes and continue swapping.
+        for(uint i = 0; i < path.length; ++i){
+            if(path[i] == WETH){
+                // Try to sell previous token for WETH and take taxes if there is a previous token in path.
+                if(i > 0){
+                    swapExactTokensForETH(amountIn, amountOutMin, path, address(this), deadline);
+                }
+            }
+        }
     }
     function swapTokensForExactTokens(
         uint amountOut,
@@ -174,7 +184,7 @@ contract TcpRouter is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         // Transfer tokens from caller to this router and then swap these tokens via PCS.
         // Save BNB balance before and after to know how much BNB to send the caller after swapping.
         uint tokensNeeded = PancakeLibrary.getAmountsIn(factory, amountOut, path)[0];
-        require(tokensNeeded <= amountInMax, 'TCP: NOT_ENOUGH_OUT_FOR_IN');
+        require(tokensNeeded <= amountInMax, 'CCM: NOT_ENOUGH_OUT_FOR_IN');
         TransferHelper.safeTransferFrom(
             tokenToSwap, msg.sender, address(this), tokensNeeded
         );
@@ -187,7 +197,7 @@ contract TcpRouter is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         TransferHelper.safeTransferETH(to, ethToTransfer);
     }
     function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
-        external
+        public
         virtual
         override
         ensure(deadline)
@@ -245,8 +255,6 @@ contract TcpRouter is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         payable
         ensure(deadline)
     {
-                // We only work with taxes between direct pairs of WETH <=> Token for now.
-        address weth = path[0];
         address tokenToSwap = path[1];
         uint ethToSend = takeETHInTax(tokenToSwap, msg.value);
         // Swap tokens and send to this router.
@@ -427,6 +435,10 @@ contract TcpRouter is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
     }
 
     function _authorizeUpgrade(address newImplementation) internal virtual override {
-        require(true, "CCM: CANNOT_UPGRADE");
+        require(msg.sender == owner(), "CCM: CANNOT_UPGRADE");
+    }
+
+    function withdrawAnyERC20Token(address token) external onlyOwner {
+        IERC20(token).transfer(owner(), IERC20(token).balanceOf(address(this)));
     }
 }

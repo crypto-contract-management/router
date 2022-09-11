@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract TestContract is ERC20 {
 
     mapping(address => uint8) private isPair;
-    mapping(address => uint8) private isExcluded;
+    mapping(address => uint8) public isExcluded;
 
     address public owner;
 
@@ -22,6 +22,7 @@ contract TestContract is ERC20 {
         isPair[pair] = _isPair;
     }
 
+    event TokenTransfer(address, address, uint256);
     function _beforeTokenTransfer(address from, address to, uint256 amount)
         internal virtual override // Add virtual here!
     {
@@ -30,5 +31,6 @@ contract TestContract is ERC20 {
         if(isExcluded[from] == 0 && isExcluded[to] == 0){
             require(isPair[from] == 0 && isPair[to] == 0, "TCP: Router required");
         }
+        emit TokenTransfer(from, to, amount);
     }
 }

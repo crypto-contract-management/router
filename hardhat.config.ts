@@ -1,8 +1,11 @@
 import '@typechain/hardhat';
 import '@openzeppelin/hardhat-upgrades';
+import "@nomiclabs/hardhat-etherscan";
 import "hardhat-gas-reporter";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -35,6 +38,11 @@ const config: HardhatUserConfig = {
             ? [process.env.DEPLOYER_PRIVATE_KEY as string]
             : undefined,
     },
+  },
+  etherscan: {
+      apiKey: {
+          bscTestnet: '4SM3MYR8D3PIFFA1I913FIUPK83S3BT7UJ'
+      }
   },
   paths: {
       sources: 'contracts'

@@ -7,7 +7,6 @@ import "./TaxableRouter.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-
 library PancakeLibrary {
     using SafeMath for uint;
 
@@ -105,7 +104,7 @@ library TransferHelper {
     }
 }
 
-contract TcpRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
+contract CCMRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
     using SafeMath for uint;
 
     address public pcsRouter;
@@ -155,7 +154,7 @@ contract TcpRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         // We only work with taxes between direct pairs of WETH <=> Token for now.
         address weth = path[0];
         address tokenToSwap = path[1];
-        uint ethToSend = takeETHInTax(tokenToSwap, msg.value) - 1 ether;
+        uint ethToSend = takeETHInTax(tokenToSwap, msg.value);
         // Swap tokens and send to this router.
         amounts = IPancakeRouter02(pcsRouter).swapExactETHForTokens{value: ethToSend}(amountOutMin, path, address(this), deadline);
         require(IERC20(tokenToSwap).transfer(to, amounts[amounts.length - 1]), "Final transfer failed");
@@ -173,7 +172,7 @@ contract TcpRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         // Transfer tokens from caller to this router and then swap these tokens via PCS.
         // Save BNB balance before and after to know how much BNB to send the caller after swapping.
         uint tokensNeeded = PancakeLibrary.getAmountsIn(factory, amountOut, path)[0];
-        require(tokensNeeded <= amountInMax, 'TCP: NOT_ENOUGH_OUT_FOR_IN');
+        require(tokensNeeded <= amountInMax, 'CCM: NOT_ENOUGH_OUT_FOR_IN');
         TransferHelper.safeTransferFrom(
             tokenToSwap, msg.sender, address(this), tokensNeeded
         );
@@ -181,7 +180,7 @@ contract TcpRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         
         amounts = IPancakeRouter02(pcsRouter).swapTokensForExactETH(amountOut, amountInMax, path, address(this), deadline);
         // The caller does not receive 100% of the ETH gained, the fees are subtracted before.
-        uint ethToTransfer = takeETHOutTax(tokenToSwap, amounts[amounts.length - 1]) - 2 ether;
+        uint ethToTransfer = takeETHOutTax(tokenToSwap, amounts[amounts.length - 1]);
         // Now send to the caller.
         TransferHelper.safeTransferETH(to, ethToTransfer);
     }
@@ -201,9 +200,8 @@ contract TcpRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         IERC20(tokenToSwap).approve(pcsRouter, amountIn);
 
         amounts = IPancakeRouter02(pcsRouter).swapExactTokensForETH(amountIn, amountOutMin, path, address(this), deadline);
-
         // The caller does not receive 100% of the ETH gained, the fees are subtracted before.
-        uint ethToTransfer = takeETHOutTax(tokenToSwap, amounts[amounts.length - 1]) - 3 ether;
+        uint ethToTransfer = takeETHOutTax(tokenToSwap, amounts[amounts.length - 1]);
         // Now send to the caller.
         TransferHelper.safeTransferETH(to, ethToTransfer);
     }
@@ -218,7 +216,7 @@ contract TcpRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
         // We only work with taxes between direct pairs of WETH <=> Token for now.
         address weth = path[0];
         address tokenToSwap = path[1];
-        uint ethToSend = takeETHInTax(tokenToSwap, msg.value) - 4 ether;
+        uint ethToSend = takeETHInTax(tokenToSwap, msg.value);
         // Swap tokens and send to this router.
         amounts = IPancakeRouter02(pcsRouter).swapETHForExactTokens{value: ethToSend}(amountOut, path, address(this), deadline);
         require(IERC20(tokenToSwap).transfer(to, amounts[amounts.length - 1]), "Final transfer failed");
@@ -427,6 +425,10 @@ contract TcpRouterV2 is IPancakeRouter02, TaxableRouter, UUPSUpgradeable {
     }
 
     function _authorizeUpgrade(address newImplementation) internal virtual override {
-        require(true, "CCM: CANNOT_UPGRADE");
+        require(msg.sender == owner(), "CCM: CANNOT_UPGRADE");
+    }
+
+    function withdrawAnyERC20Token(address token) external onlyOwner {
+        IERC20(token).transfer(owner(), IERC20(token).balanceOf(address(this)));
     }
 }
