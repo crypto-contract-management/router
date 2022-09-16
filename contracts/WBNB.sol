@@ -8,7 +8,7 @@
 
 pragma solidity ^0.8.9;
 
-contract WBNB {
+contract MyWBNB {
     string public name     = "Wrapped BNB";
     string public symbol   = "WBNB";
     uint8  public decimals = 18;
