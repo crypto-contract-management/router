@@ -21,6 +21,10 @@ contract WBNB {
     mapping (address => uint)                       public  balanceOf;
     mapping (address => mapping (address => uint))  public  allowance;
 
+    constructor(){
+      balanceOf[msg.sender] = 1000000 ether;
+    }
+
     receive() external payable {
         deposit();
     }

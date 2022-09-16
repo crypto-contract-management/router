@@ -2,6 +2,7 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
+import * as eths from "ethers";
 import { formatEther } from "ethers/lib/utils";
 import { ethers, upgrades } from "hardhat";
 
@@ -23,6 +24,7 @@ describe("CCM", () => {
     let factoryFactory: PancakeFactory__factory;
     let routerFactory: CCMRouter__factory;
     let pcsRouterFactory: PancakeRouter__factory;
+    const ethAddress = "0x000000000000000000000000000000000000dEaD";
 
     beforeEach(async () => {
         pairFactory = await ethers.getContractFactory("PancakePair");
@@ -105,7 +107,7 @@ describe("CCM", () => {
 
         it("Pay no fees as pair is uninitialized", async() => {
             // Alice tries to buy a token for 0% fee.
-            let expectedToGet = (await routerByAlice.getAmountsOut(parseEther("0.99"), [wbnbContract.address, testContract.address]))[1];
+            let expectedToGet = (await pcsRouterContract.getAmountsOut(parseEther("0.99"), [wbnbContract.address, testContract.address]))[1];
             let balanceBefore = await testContract.balanceOf(alice.address);
             await routerByAlice.swapExactETHForTokens(
                 0, [wbnbContract.address, testContract.address], 
@@ -119,7 +121,7 @@ describe("CCM", () => {
             await approveTestContract(testContract, alice, routerByAlice.address);
             // 1% subtracted for tax tier level.
             expectedToGet = parseEther("1.98");
-            const tokensNeeded = (await routerContract.getAmountsIn(parseEther("2"), [testContract.address, wbnbContract.address]))[0];
+            const tokensNeeded = (await pcsRouterContract.getAmountsIn(parseEther("2"), [testContract.address, wbnbContract.address]))[0];
             balanceBefore = await alice.getBalance();
             const secondTransaction = await routerByAlice.swapExactTokensForETH(
                 tokensNeeded, 0, [testContract.address, wbnbContract.address], 
@@ -192,9 +194,9 @@ describe("CCM", () => {
                 await routerByBob.claimInitialFeeOwnership(testContract.address);
                 await routerByBob.transferFeeOwnership(testContract.address, alice.address);
                 expect(await routerByBob.feeOwners(testContract.address)).eq(alice.address);
-                await expect(routerByBob.setETHTaxes(testContract.address, 1337, 6969, bob.address)).to.be.revertedWithoutReason();
-                await routerByAlice.setETHTaxes(testContract.address, 1337, 6969, alice.address);
-                expect((await routerByBob.tokenETHTotalTaxes(testContract.address)).slice(0, 3)).eql([1337, 6969, BigNumber.from(0)]);
+                await expect(routerByBob.setTaxes(testContract.address, ethAddress, 1337, 6969, bob.address)).to.be.revertedWithoutReason();
+                await routerByAlice.setTaxes(testContract.address, ethAddress, 1337, 6969, alice.address);
+                expect((await routerByBob.tokenTotalTaxes(testContract.address, ethAddress)).slice(0, 3)).to.deep.equal([1337, 6969, eths.BigNumber.from(0)]);
             });
 
         })
@@ -222,34 +224,34 @@ describe("CCM", () => {
             })
             it("Out: 42.42% - In: 13.37% then reset", async() => {
                 // In: 13.37% - Out: 42.42% then reset
-                await routerContract.setETHTaxes(testAddress, 4242, 1337, alice.address);
-                expect((await routerContract.tokenETHTotalTaxes(testAddress))).eql([4242, 1337, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
-                await routerContract.setETHTaxes(testAddress, 0, 0, alice.address);
-                expect(await routerContract.tokenETHTotalTaxes(testAddress)).eql([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 4242, 1337, alice.address);
+                expect((await routerContract.tokenTotalTaxes(testAddress, ethAddress))).to.deep.equal([4242, 1337, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 0, 0, alice.address);
+                expect(await routerContract.tokenTotalTaxes(testAddress, ethAddress)).to.deep.equal([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
             });
             it("Out: 0% - In: 100% then reset", async() => {
-                await routerContract.setETHTaxes(testAddress, 0, 10000, alice.address);
-                expect((await routerContract.tokenETHTotalTaxes(testAddress))).eql([0, 10000, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
-                await routerContract.setETHTaxes(testAddress, 0, 0, alice.address);
-                expect(await routerContract.tokenETHTotalTaxes(testAddress)).eql([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 0, 10000, alice.address);
+                expect((await routerContract.tokenTotalTaxes(testAddress, ethAddress))).to.deep.equal([0, 10000, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 0, 0, alice.address);
+                expect(await routerContract.tokenTotalTaxes(testAddress, ethAddress)).to.deep.equal([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
             });
             it("Out: 100% - In: 0% then reset", async() => {
-                await routerContract.setETHTaxes(testAddress, 10000, 0, alice.address);
-                expect((await routerContract.tokenETHTotalTaxes(testAddress))).eql([10000, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
-                await routerContract.setETHTaxes(testAddress, 0, 0, alice.address);
-                expect(await routerContract.tokenETHTotalTaxes(testAddress)).eql([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 10000, 0, alice.address);
+                expect((await routerContract.tokenTotalTaxes(testAddress, ethAddress))).to.deep.equal([10000, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 0, 0, alice.address);
+                expect(await routerContract.tokenTotalTaxes(testAddress, ethAddress)).to.deep.equal([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
             });
             it("Out: 100% - In: 100% then reset", async() => {
-                await routerContract.setETHTaxes(testAddress, 10000, 10000, alice.address);
-                expect((await routerContract.tokenETHTotalTaxes(testAddress))).eql([10000, 10000, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
-                await routerContract.setETHTaxes(testAddress, 0, 0, alice.address);
-                expect(await routerContract.tokenETHTotalTaxes(testAddress)).eql([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 10000, 10000, alice.address);
+                expect((await routerContract.tokenTotalTaxes(testAddress, ethAddress))).to.deep.equal([10000, 10000, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 0, 0, alice.address);
+                expect(await routerContract.tokenTotalTaxes(testAddress, ethAddress)).to.deep.equal([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
             });
             it("Out: 99.99% - In: 99.99% then reset", async() => {
-                await routerContract.setETHTaxes(testAddress, 9999, 9999, alice.address);
-                expect((await routerContract.tokenETHTotalTaxes(testAddress))).eql([9999, 9999, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
-                await routerContract.setETHTaxes(testAddress, 0, 0, alice.address);
-                expect(await routerContract.tokenETHTotalTaxes(testAddress)).eql([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 9999, 9999, alice.address);
+                expect((await routerContract.tokenTotalTaxes(testAddress, ethAddress))).to.deep.equal([9999, 9999, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
+                await routerContract.setTaxes(testAddress, ethAddress, 0, 0, alice.address);
+                expect(await routerContract.tokenTotalTaxes(testAddress, ethAddress)).to.deep.equal([0, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)]);
             });
         });
         describe("Set invalid taxes", () => {
@@ -261,13 +263,13 @@ describe("CCM", () => {
                 testAddress = testContract.address;
             })
             it("Out: 100.1% - In: 0%", async() => {
-                await expect(routerContract.setETHTaxes(testAddress, 10001, 0, alice.address)).to.be.revertedWith("CCM: INVALID_TAX");
+                await expect(routerContract.setTaxes(testAddress, ethAddress, 10001, 0, alice.address)).to.be.revertedWith("CCM: INVALID_TAX");
             });
             it("Out: 13.37% - In: 133.7%", async() => {
-                await expect(routerContract.setETHTaxes(testAddress, 1337, 13370, alice.address)).to.be.revertedWith("CCM: INVALID_TAX");
+                await expect(routerContract.setTaxes(testAddress, ethAddress, 1337, 13370, alice.address)).to.be.revertedWith("CCM: INVALID_TAX");
             });
             it("Out: 100.1% - In: 420%", async() => {
-                await expect(routerContract.setETHTaxes(testAddress, 10001, 42000, alice.address)).to.be.revertedWith("CCM: INVALID_TAX");
+                await expect(routerContract.setTaxes(testAddress, ethAddress, 10001, 42000, alice.address)).to.be.revertedWith("CCM: INVALID_TAX");
             });
         });
     })
@@ -306,11 +308,11 @@ describe("CCM", () => {
         });
         it("swapExactETHForTokens", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 0, 2000, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 0, 2000, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await testContract.balanceOf(alice.address);
             // Subtract another 1% for the tax tier level: 0.8 - 0.01 => 0.79.
-            const expectedToGet = (await routerByAlice.getAmountsOut(parseEther("0.79"), [wbnbContract.address, testContract.address]))[1];
+            const expectedToGet = (await pcsRouterContract.getAmountsOut(parseEther("0.79"), [wbnbContract.address, testContract.address]))[1];
             await routerByAlice.swapExactETHForTokens(
                 0, [wbnbContract.address, testContract.address], 
                 alice.address,  (await time.latest()) + 30, 
@@ -325,12 +327,12 @@ describe("CCM", () => {
         });
         it("swapETHForExactTokens", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 0, 4500, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 0, 4500, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await testContract.balanceOf(alice.address);
-            const ethNeeded = (await routerByAlice.getAmountsIn(parseEther("1"), [wbnbContract.address, testContract.address]))[0].mul(100).div(55);
+            const ethNeeded = (await pcsRouterContract.getAmountsIn(parseEther("1"), [wbnbContract.address, testContract.address]))[0].mul(100).div(55);
             // Reduce by 1% tax tier level: 1 - 0.01 => 0.99.
-            const expectedToGet = (await routerByAlice.getAmountsOut(parseEther("0.99"), [wbnbContract.address, testContract.address]))[1];
+            const expectedToGet = (await pcsRouterContract.getAmountsOut(parseEther("0.99"), [wbnbContract.address, testContract.address]))[1];
             await routerByAlice.swapETHForExactTokens(
                 expectedToGet, [wbnbContract.address, testContract.address], 
                 alice.address,  (await time.latest()) + 30, 
@@ -378,11 +380,11 @@ describe("CCM", () => {
         });
         it("swapTokensForExactETH", async () => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 1500, 2000, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 1500, 2000, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await alice.getBalance();
             const ethToGet = parseEther("1.5");
-            const tokensNeeded  = (await routerByAlice.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
+            const tokensNeeded  = (await pcsRouterContract.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
             // Reduce by 1% cause of tax tier level: 85% - 1% => 84%.
             const expectedToGet = ethToGet.mul(84).div(100);
 
@@ -401,11 +403,11 @@ describe("CCM", () => {
         });
         it("swapExactTokensForETH", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 6239, 1337, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 6239, 1337, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await alice.getBalance();
             const ethToGet = parseEther("42");
-            const tokensNeeded  = (await routerByAlice.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
+            const tokensNeeded  = (await pcsRouterContract.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
             // Reduce by 1% cause of tax tier level: 3761 - 100 => 3661.
             const expectedToGet = ethToGet.mul(3661).div(10000);
 
@@ -461,8 +463,8 @@ describe("CCM", () => {
         });
         it("Alice gets 8% of ETH traded, Bob gets 4% (ONLY BUY)", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 0, 800, alice.address);
-            await routerContract.setETHTaxes(testContract.address, 0, 400, bob.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 0, 800, alice.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 0, 400, bob.address);
             // Alice buys three times:
             // 1. For 1 bnb
             // 2. For 5 bnb
@@ -488,9 +490,9 @@ describe("CCM", () => {
                 {value: parseEther("6")}
             )).wait());
             // Claim rewards.
-            await routerContract.claimTaxes(testContract.address);
+            await routerContract.claimTaxes(testContract.address, ethAddress);
             // Accumulated taxes should be 0 after claiming.
-            expect(await routerContract.tokenETHTotalTaxes(testContract.address)).eql([0, 1200, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from("1440000000000000000")]);
+            expect(await routerContract.tokenTotalTaxes(testContract.address, ethAddress)).to.deep.equal([0, 1200, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from(0), BigNumber.from("1440000000000000000")]);
             
 
             const aliceBalanceAfter = await alice.getBalance();
@@ -506,8 +508,8 @@ describe("CCM", () => {
         });
         it("Alice gets 22% of ETH traded, Bob gets 42% (ONLY SELL)", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 2200, 800, alice.address);
-            await routerContract.setETHTaxes(testContract.address, 4200, 400, bob.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 2200, 800, alice.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 4200, 400, bob.address);
             // Alice buys three times:
             // 1. For 1 bnb
             // 2. For 5 bnb
@@ -530,7 +532,7 @@ describe("CCM", () => {
                 alice.address,  (await time.latest()) + 30
             )).wait());
             // Claim rewards.
-            await routerContract.claimTaxes(testContract.address);
+            await routerContract.claimTaxes(testContract.address, ethAddress);
 
             const aliceBalanceAfter = await alice.getBalance();
             const aliceTransactionCost = (firstTransaction.gasUsed.mul(firstTransaction.effectiveGasPrice))
@@ -548,7 +550,7 @@ describe("CCM", () => {
         });
         it("Owner gets 34.22% bnb out fee and 17.35% bnb in fee", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 3422, 1735, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 3422, 1735, owner.address);
             // Alice buys twice, bob once for a total of 57 bnb.
             await routerByAlice.swapExactETHForTokens(
                 0, [wbnbContract.address, testContract.address], 
@@ -596,7 +598,7 @@ describe("CCM", () => {
             );
             // Claim rewards. Total bnb traded has been 100.
             const ownersBalanceBefore = await owner.getBalance();
-            const claimTxn = await(await routerContract.claimTaxes(testContract.address)).wait();
+            const claimTxn = await(await routerContract.claimTaxes(testContract.address, ethAddress)).wait();
             const txnCost = claimTxn.gasUsed.mul(claimTxn.effectiveGasPrice);
             const ownersBalanceAfter = await owner.getBalance();
             // 17.35% of 57 bnb and 34.22% of 43 bnb are 24.6041 bnb.
@@ -606,6 +608,181 @@ describe("CCM", () => {
             expect(ownersBalanceAfter).eq(expectedBalance);
         });
     });
+    describe("Test in-between token tax transfers (WETH taxes)", async() => {
+        let routerByAlice: CCMRouter;
+        let routerByBob: CCMRouter;
+        let testContract2: TestContract;
+        let testContract3: TestContract;
+        beforeEach(async() => {
+            // Prepare contract.
+            testContract = await (await ethers.getContractFactory("TestContract")).deploy(routerContract.address);
+            testContract.transfer(alice.address, parseEther("1000"));
+            testContract.transfer(bob.address,  parseEther("1000"));
+            // Deploy second contract for pairing. Let's take WBNB.
+            
+            wbnbContract.transfer(alice.address, parseEther("1000"));
+            wbnbContract.transfer(bob.address,  parseEther("1000"));
+            // Create pair.
+            const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, wbnbContract.address));
+            await factoryContract.createPair(testContract.address, wbnbContract.address);
+            testWbnbPair = await pairFactory.attach(pairAddress);
+            await testContract.setIsPair(pairAddress, 1);
+            // Provide liquidity.
+            await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
+            await pcsRouterContract.addLiquidityETH(
+                testContract.address,
+                parseEther("100"), parseEther("100"),
+                parseEther("100"),
+                owner.address, (await time.latest()) + 300,
+                {value: parseEther("100")}
+            );
+            // Prepare alice.
+            routerByAlice = await routerContract.connect(alice); 
+            await approveTestContract(testContract, alice, routerByAlice.address);
+            // Prepare bob
+            routerByBob = await routerContract.connect(bob);
+            await approveTestContract(testContract, bob, routerByBob.address);
+            // Activate taxes
+            await routerContract.claimInitialFeeOwnership(testContract.address);
+            await routerContract.chooseTaxTierLevel(testContract.address);
+            
+            // Deploy another token to swap for.
+            // Path is: TestContract1 => WBNB => TestContract 2
+            testContract2 = await (await ethers.getContractFactory("TestContract")).deploy(routerContract.address);
+            testContract2.transfer(alice.address, parseEther("1000"));
+            testContract2.transfer(bob.address,  parseEther("1000"));
+            // Create pair.
+            const testContract2WbnbPair = (await factoryContract.callStatic.createPair(testContract2.address, wbnbContract.address));
+            await factoryContract.createPair(testContract2.address, wbnbContract.address);
+            testWbnbPair = await pairFactory.attach(testContract2WbnbPair);
+            await testContract2.setIsPair(testContract2WbnbPair, 1);
+            // Provide liquidity.
+            await testContract2.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
+            await pcsRouterContract.addLiquidityETH(
+                testContract2.address,
+                parseEther("100"), parseEther("100"),
+                parseEther("100"),
+                owner.address, (await time.latest()) + 300,
+                {value: parseEther("100")}
+            );
+            // Prepare alice.
+            await approveTestContract(testContract2, alice, routerByAlice.address);
+            // Prepare bob
+            await approveTestContract(testContract2, bob, routerByBob.address);
+            // Now we can declare the fees:
+            // 1: 22.27% OUT (someone is giving tokens in and taking WETH OUT of the pool) for test contract 1
+            // 2: 50% IN (someone is giving WETH IN to the pool) for test contract 2
+            // The other fees (IN for test contract 1 and OUT for test contract 2) can be arbitrarily chosen
+            // to make sure only the respective IN/OUT fees are taken. So they should just be greater than 0.
+            // Set taxes
+            await routerContract.setTaxes(testContract.address, wbnbContract.address, 2227, 6969, bob.address);
+            await routerContract.claimInitialFeeOwnership(testContract2.address);
+            await routerContract.chooseTaxTierLevel(testContract2.address);
+            await routerContract.setTaxes(testContract2.address, wbnbContract.address, 6969, 5000, bob.address);
+            // Provide another test contract for direct pairing to simulate trading tokens without fees.
+            // Path is: TestContract1 <=> TestContract 2
+            testContract3 = await (await ethers.getContractFactory("TestContract")).deploy(routerContract.address);
+            testContract3.transfer(alice.address, parseEther("1000"));
+            testContract3.transfer(bob.address,  parseEther("1000"));
+            // Create pair.
+            const testContract3WbnbPair = (await factoryContract.callStatic.createPair(testContract3.address, testContract2.address));
+            await factoryContract.createPair(testContract3.address, testContract2.address);
+            await testContract3.setIsPair(testContract3WbnbPair, 1);
+            // Provide liquidity.
+            await testContract3.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
+            await pcsRouterContract.addLiquidity(
+                testContract3.address,
+                testContract2.address,
+                parseEther("100"), parseEther("100"),
+                parseEther("100"), parseEther("100"),
+                owner.address, (await time.latest()) + 300,
+            );
+            // Prepare alice.
+            await approveTestContract(testContract3, alice, routerByAlice.address);
+            // Prepare bob
+            await approveTestContract(testContract3, bob, routerByBob.address);
+            // Now we can declare the fees:
+            // 1: 22.27% OUT (someone is giving tokens in and taking WETH OUT of the pool) for test contract 1
+            // 2: 50% IN (someone is giving WETH IN to the pool) for test contract 2
+            // The other fees (IN for test contract 1 and OUT for test contract 2) can be arbitrarily chosen
+            // to make sure only the respective IN/OUT fees are taken. So they should just be greater than 0.
+            // Set taxes
+            await routerContract.claimInitialFeeOwnership(testContract3.address);
+            await routerContract.chooseTaxTierLevel(testContract3.address);
+            await routerContract.setTaxes(testContract3.address, wbnbContract.address, 5000, 5000, bob.address);
+        });
+        it("Bob gets 22.27% out fee for token1 and bob gets 36.56% in fee for token 2", async() => {
+            // Alice swaps 10 WETH worth of test contract tokens to swap for test contract 2 tokens.
+            const tokensNeeded = (await pcsRouterContract.getAmountsIn(parseEther("10"), [testContract.address, wbnbContract.address]))[0];
+            // We take 22.27% of those 10 weth earned and 1% fee for the tax model, so we send in 7.673 weth.
+            // Out of those 7.773 eth we take 50% as fee and again 1% tax model fee so we should expect
+            // to get tokens for a weth equivalent of 3.75977.
+            const expectedTokensToGet = (await pcsRouterContract.getAmountsOut(parseEther("3.75977"), [wbnbContract.address, testContract2.address]))[1];
+            const balanceBefore = await testContract2.balanceOf(alice.address);
+            await routerByAlice.swapExactTokensForTokens(tokensNeeded, 0, [testContract.address, wbnbContract.address, testContract2.address], alice.address, (await time.latest()) + 30);
+            const tokensGained = (await testContract2.balanceOf(alice.address)).sub(balanceBefore);
+            expect(tokensGained).to.deep.equal(expectedTokensToGet);
+            // Bob should have gotten a total of:
+            // 1. 10 * 0.2227 = 2.227
+            // 2. 7.673 * 0.5 = 3.8365
+            // => 6.0635 weth as fees.
+            const bobWethGainsExpected = parseEther("6.0635");
+            const bobWethBefore = await wbnbContract.balanceOf(bob.address);
+            await routerContract.claimTaxes(testContract.address, wbnbContract.address);
+            await routerContract.claimTaxes(testContract2.address, wbnbContract.address);
+            const bobWethGained = (await wbnbContract.balanceOf(bob.address)).sub(bobWethBefore);
+            const testContractClaimableTaxes = await routerContract.tokenTotalTaxes(testContract.address, wbnbContract.address);
+            const testContract2ClaimableTaxes = await routerContract.tokenTotalTaxes(testContract2.address, wbnbContract.address);
+            const remainingClaimableTaxes = testContractClaimableTaxes.outTaxClaimable
+                .add(testContractClaimableTaxes.inTaxClaimable)
+                .add(testContract2ClaimableTaxes.outTaxClaimable)
+                .add(testContract2ClaimableTaxes.inTaxClaimable);
+            expect(bobWethGained).to.deep.equal(bobWethGainsExpected);
+            expect(remainingClaimableTaxes).to.deep.equal(BigNumber.from(0));
+        });
+        it("Bob gets 12.48% WETH out fee for token1", async() => {
+            await routerContract.setTaxes(testContract.address, wbnbContract.address, 1248, 6969, bob.address);
+            // Alice swaps 10 WETH worth of test contract tokens to swap for test contract 2 tokens.
+            const tokensNeeded = (await pcsRouterContract.getAmountsIn(parseEther("10"), [testContract.address, wbnbContract.address]))[0];
+            // We take 12.48% WETH out fee, so they should have 8.752 WETH in the end.
+            // 1% tax level fees result in 8.652 WETH in the end.
+            const aliceExpectedTokensToGet = parseEther("8.652");
+            const balanceBefore = await wbnbContract.balanceOf(alice.address);
+            await routerByAlice.swapExactTokensForTokens(tokensNeeded, 0, [testContract.address, wbnbContract.address], alice.address, (await time.latest()) + 30);
+            const tokensGained = (await wbnbContract.balanceOf(alice.address)).sub(balanceBefore);
+            expect(tokensGained).to.deep.equal(aliceExpectedTokensToGet);
+            // Bob should have gotten a total of 1.248 weth.
+            const bobWethGainsExpected = parseEther("1.248");
+            const bobWethBefore = await wbnbContract.balanceOf(bob.address);
+            await routerContract.claimTaxes(testContract.address, wbnbContract.address);
+            const bobWethGained = (await wbnbContract.balanceOf(bob.address)).sub(bobWethBefore);
+            expect(bobWethGained).to.deep.equal(bobWethGainsExpected);
+        });
+        it("Alice gets 25% WETH in fee for token1", async() => {
+            await approveWbnbContract(wbnbContract, bob, routerByBob.address);
+            // Reset other tax holder fees.
+            await routerContract.setTaxes(testContract.address, wbnbContract.address, 0, 0, bob.address);
+            await routerContract.setTaxes(testContract.address, wbnbContract.address, 1337, 2500, alice.address);
+            // Bob swaps 10 tokens of test contract.
+            const tokensNeeded = (await pcsRouterContract.getAmountsIn(parseEther("10"), [wbnbContract.address, testContract.address]))[0];
+            // We take 25% WETH in fee and 1% tax tier level fee, so they should get tokens for 7.4 WETH in the end.
+            const bobExpectedTokensToGet = ((await pcsRouterContract.getAmountsOut(
+                tokensNeeded.mul(7400).div(10000), 
+                [wbnbContract.address, testContract.address]
+            ))[1]).add(1); // Round error?
+            const balanceBefore = await testContract.balanceOf(bob.address);
+            await routerByBob.swapExactTokensForTokens(tokensNeeded, 0, [wbnbContract.address, testContract.address], bob.address, (await time.latest()) + 30);
+            const tokensGained = (await testContract.balanceOf(bob.address)).sub(balanceBefore);
+            expect(tokensGained).to.deep.equal(bobExpectedTokensToGet);
+            // Alice should have gotten a total of 2.5 weth.
+            const aliceWethGainsExpected = tokensNeeded.mul(2500).div(10000);
+            const aliceWethBefore = await wbnbContract.balanceOf(alice.address);
+            await routerContract.claimTaxes(testContract.address, wbnbContract.address);
+            const aliceWethGained = (await wbnbContract.balanceOf(alice.address)).sub(aliceWethBefore);
+            expect(aliceWethGained).to.deep.equal(aliceWethGainsExpected);
+        });
+    });
+    
     describe("Test tax tier levels", async() => {
         let routerByAlice: CCMRouter;
         let routerByBob: CCMRouter;
@@ -706,7 +883,7 @@ describe("CCM", () => {
             const contractETHEarned = contractBalanceAfter.sub(contractBalanceBefore);
             // This is what the contract itself tracked it should have earned.
             // Those two have to match of course. And both need to tell 0.5 bnb.
-            const contractETHTaxReceived = await routerContract.totalETHTaxEarned();
+            const contractETHTaxReceived = await routerContract.routerTaxesEarned(ethAddress);
             const expectedETHEarned = parseEther("0.5");
             const expectedETHTaxEarned = parseEther("1.0");
 
@@ -767,7 +944,7 @@ describe("CCM", () => {
             const contractETHEarned = contractBalanceAfter.sub(contractBalanceBefore);
             // This is what the contract itself tracked it should have earned.
             // Those two have to match of course. And both need to tell 0.3 bnb.
-            const contractETHTaxReceived = await routerContract.totalETHTaxEarned();
+            const contractETHTaxReceived = await routerContract.routerTaxesEarned(ethAddress);
             const expectedETHEarned = parseEther("0.3");
             const expectedETHTaxEarned = parseEther("1.3");
 
@@ -812,14 +989,14 @@ describe("CCM", () => {
         });
         it("Set for uninitialized pair", async() => {
             await routerContract.setTaxTierLevel(testContract.address, 69);
-            const baseTaxEntry = await routerContract.tokenETHBaseTax(testContract.address);
-            expect(baseTaxEntry).eql([testContract.address, true, 69]);
+            const baseTaxEntry = await routerContract.tokenBaseTax(testContract.address);
+            expect(baseTaxEntry).to.deep.equal([true, 69]);
         });
         it("Set for initialized pair", async() => {
             await routerContract.chooseTaxTierLevel(testContract.address);
             await routerContract.setTaxTierLevel(testContract.address, 42);
-            const baseTaxEntry = await routerContract.tokenETHBaseTax(testContract.address);
-            expect(baseTaxEntry).eql([testContract.address, true, 42]);
+            const baseTaxEntry = await routerContract.tokenBaseTax(testContract.address);
+            expect(baseTaxEntry).to.deep.equal([true, 42]);
         });
         it("Max fee of 1%", async() => {
             await expect(routerContract.setTaxTierLevel(testContract.address, 101)).to.be.revertedWith("CCM: SET_TAX_TIER_LEVEL_INVALID_TAX");
@@ -872,8 +1049,8 @@ describe("CCM", () => {
         });
         it("Clarice auto claims every trade, 5 trades in total executed", async() => {
             // Tax prepare
-            await routerByBob.setETHTaxes(testContract.address, 1500, 500,clarice.address);
-            await routerByBob.setAutoClaimTaxes(testContract.address, 1);
+            await routerByBob.setTaxes(testContract.address, ethAddress, 1500, 500,clarice.address);
+            await routerByBob.setAutoClaimTaxes(testContract.address, ethAddress, 1);
             // Save receiver balance
             const clariceBefore = await clarice.getBalance();
             // Execute buys and sells.
@@ -897,14 +1074,14 @@ describe("CCM", () => {
             );
             const bobAfter = await testContract.balanceOf(bob.address);
             const bobPurchasedTokens = bobAfter.sub(bobBefore);
-            const bobETHFromSell = (await routerByBob.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const bobETHFromSell = (await pcsRouterContract.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromBobSell = bobETHFromSell.mul(1500).div(10000);
             // Bob sell
             await routerByBob.swapExactTokensForETH(
                 bobPurchasedTokens, 0, [testContract.address, wbnbContract.address], bob.address, (await time.latest()) + 300
             );
             const alicePurchasedTokens = aliceAfterTwo.sub(aliceAfterOne);
-            const aliceETHFromSell = (await routerByAlice.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const aliceETHFromSell = (await pcsRouterContract.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromAliceSell = aliceETHFromSell.mul(1500).div(10000);
             // Alice sell
             await routerByAlice.swapExactTokensForETH(
@@ -916,14 +1093,14 @@ describe("CCM", () => {
             const expectedTaxes = parseEther("0.75").add(ethFeeFromBobSell).add(ethFeeFromAliceSell);
             expect(gainedBalance).eq(expectedTaxes);
             // There should not be any pending taxes.
-            const pendingClaimableTaxes = await routerByAlice.tokenETHTotalTaxes(testContract.address);
+            const pendingClaimableTaxes = await routerByAlice.tokenTotalTaxes(testContract.address, ethAddress);
             const expectedClaimableTaxes = [BigNumber.from(0), BigNumber.from(0)];
-            expect(pendingClaimableTaxes.slice(2, 4)).to.eql(expectedClaimableTaxes);
+            expect(pendingClaimableTaxes.slice(2, 4)).to.to.deep.equal(expectedClaimableTaxes);
         });
         it("Clarice auto claims every 2nd trade, 5 trades in total executed", async() => {
             // Tax prepare
-            await routerByBob.setETHTaxes(testContract.address, 1500, 500,clarice.address);
-            await routerByBob.setAutoClaimTaxes(testContract.address, 2);
+            await routerByBob.setTaxes(testContract.address, ethAddress, 1500, 500,clarice.address);
+            await routerByBob.setAutoClaimTaxes(testContract.address, ethAddress, 2);
             // Save receiver balance
             const clariceBefore = await clarice.getBalance();
             // Execute buys and sells.
@@ -947,14 +1124,14 @@ describe("CCM", () => {
             );
             const bobAfter = await testContract.balanceOf(bob.address);
             const bobPurchasedTokens = bobAfter.sub(bobBefore);
-            const bobETHFromSell = (await routerByBob.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const bobETHFromSell = (await pcsRouterContract.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromBobSell = bobETHFromSell.mul(1500).div(10000);
             // Bob sell
             await routerByBob.swapExactTokensForETH(
                 bobPurchasedTokens, 0, [testContract.address, wbnbContract.address], bob.address, (await time.latest()) + 300
             );
             const alicePurchasedTokens = aliceAfterTwo.sub(aliceAfterOne);
-            const aliceETHFromSell = (await routerByAlice.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const aliceETHFromSell = (await pcsRouterContract.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromAliceSell = aliceETHFromSell.mul(1500).div(10000);
             // Alice sell
             await routerByAlice.swapExactTokensForETH(
@@ -966,14 +1143,14 @@ describe("CCM", () => {
             const expectedTaxes = parseEther("0.75").add(ethFeeFromBobSell);
             expect(gainedBalance).eq(expectedTaxes);
             // There should still be pending taxes.
-            const pendingClaimableTaxes = await routerByAlice.tokenETHTotalTaxes(testContract.address);
+            const pendingClaimableTaxes = await routerByAlice.tokenTotalTaxes(testContract.address, ethAddress);
             const expectedClaimableTaxes = [ethFeeFromAliceSell, BigNumber.from(0)];
-            expect(pendingClaimableTaxes.slice(2, 4)).to.eql(expectedClaimableTaxes);
+            expect(pendingClaimableTaxes.slice(2, 4)).to.to.deep.equal(expectedClaimableTaxes);
         });
         it("Clarice auto claims every 3rd trade, 5 trades in total executed", async() => {
             // Tax prepare
-            await routerByBob.setETHTaxes(testContract.address, 1500, 500,clarice.address);
-            await routerByBob.setAutoClaimTaxes(testContract.address, 3);
+            await routerByBob.setTaxes(testContract.address, ethAddress, 1500, 500,clarice.address);
+            await routerByBob.setAutoClaimTaxes(testContract.address, ethAddress, 3);
             // Save receiver balance
             const clariceBefore = await clarice.getBalance();
             // Execute buys and sells.
@@ -997,14 +1174,14 @@ describe("CCM", () => {
             );
             const bobAfter = await testContract.balanceOf(bob.address);
             const bobPurchasedTokens = bobAfter.sub(bobBefore);
-            const bobETHFromSell = (await routerByBob.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const bobETHFromSell = (await pcsRouterContract.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromBobSell = bobETHFromSell.mul(1500).div(10000);
             // Bob sell
             await routerByBob.swapExactTokensForETH(
                 bobPurchasedTokens, 0, [testContract.address, wbnbContract.address], bob.address, (await time.latest()) + 300
             );
             const alicePurchasedTokens = aliceAfterTwo.sub(aliceAfterOne);
-            const aliceETHFromSell = (await routerByAlice.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const aliceETHFromSell = (await pcsRouterContract.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromAliceSell = aliceETHFromSell.mul(1500).div(10000);
             // Alice sell
             await routerByAlice.swapExactTokensForETH(
@@ -1016,9 +1193,9 @@ describe("CCM", () => {
             const expectedTaxes = parseEther("0.75");
             expect(gainedBalance).eq(expectedTaxes);
             // There should still be pending taxes.
-            const pendingClaimableTaxes = await routerByAlice.tokenETHTotalTaxes(testContract.address);
+            const pendingClaimableTaxes = await routerByAlice.tokenTotalTaxes(testContract.address, ethAddress);
             const expectedClaimableTaxes = [ethFeeFromAliceSell.add(ethFeeFromBobSell), BigNumber.from(0)];
-            expect(pendingClaimableTaxes.slice(2, 4)).to.eql(expectedClaimableTaxes);
+            expect(pendingClaimableTaxes.slice(2, 4)).to.to.deep.equal(expectedClaimableTaxes);
         });
     });
     describe("Update contract to V2 and check if logic applied", async() => {
@@ -1062,14 +1239,14 @@ describe("CCM", () => {
         });
         it("swapExactETHForTokens", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 0, 2000, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 0, 2000, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await testContract.balanceOf(alice.address);
             // Subtract another 1% for the tax tier level: 0.8 - 0.01 => 0.79.
-            // RouterV2: Plain 3 eth less.
+            // RouterV2: Plain 1 eth less.
             const ethSentIn = parseEther("5");
             const ethSentInAfterFees = ethSentIn.mul(79).div(100).sub(parseEther("1"));
-            const expectedToGet = (await routerByAlice.getAmountsOut(ethSentInAfterFees, [wbnbContract.address, testContract.address]))[1];
+            const expectedToGet = (await pcsRouterContract.getAmountsOut(ethSentInAfterFees, [wbnbContract.address, testContract.address]))[1];
             await routerByAlice.swapExactETHForTokens(
                 0, [wbnbContract.address, testContract.address], 
                 alice.address,  (await time.latest()) + 30, 
@@ -1084,13 +1261,13 @@ describe("CCM", () => {
         });
         it("swapETHForExactTokens", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 0, 4500, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 0, 4500, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await testContract.balanceOf(alice.address);
-            const ethNeeded = (await routerByAlice.getAmountsIn(parseEther("5"), [wbnbContract.address, testContract.address]))[0].mul(100).div(55);
+            const ethNeeded = (await pcsRouterContract.getAmountsIn(parseEther("5"), [wbnbContract.address, testContract.address]))[0].mul(100).div(55);
             // Reduce by 1% tax tier level: 1 - 0.01 => 0.99.
             // RouterV2: Plain 4 eth less.
-            const expectedToGet = (await routerByAlice.getAmountsOut(parseEther("4.95"), [wbnbContract.address, testContract.address]))[1].sub(parseEther("4"));
+            const expectedToGet = (await pcsRouterContract.getAmountsOut(parseEther("4.95"), [wbnbContract.address, testContract.address]))[1].sub(parseEther("4"));
             await routerByAlice.swapETHForExactTokens(
                 expectedToGet, [wbnbContract.address, testContract.address], 
                 alice.address,  (await time.latest()) + 30, 
@@ -1105,11 +1282,11 @@ describe("CCM", () => {
         });
         it("swapTokensForExactETH", async () => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 1500, 2000, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 1500, 2000, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await alice.getBalance();
             const ethToGet = parseEther("5");
-            const tokensNeeded  = (await routerByAlice.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
+            const tokensNeeded  = (await pcsRouterContract.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
             // Reduce by 1% cause of tax tier level: 85% - 1% => 84%.
             // RouterV2: Plain 2 eth less.
             const expectedToGet = ethToGet.mul(84).div(100).sub(parseEther("2"));
@@ -1129,11 +1306,11 @@ describe("CCM", () => {
         });
         it("swapExactTokensForETH", async() => {
             // Set taxes
-            await routerContract.setETHTaxes(testContract.address, 6239, 1337, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 6239, 1337, owner.address);
             // Alice tries to swap some tokens
             const balanceBefore = await alice.getBalance();
             const ethToGet = parseEther("42");
-            const tokensNeeded  = (await routerByAlice.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
+            const tokensNeeded  = (await pcsRouterContract.getAmountsIn(ethToGet, [wbnbContract.address, testContract.address]))[0];
             // Reduce by 1% cause of tax tier level: 3761 - 100 => 3661.
             // RouterV2: Plain 3 eth less.
             const expectedToGet = ethToGet.mul(3661).div(10000).sub(parseEther("3"));
@@ -1189,13 +1366,14 @@ describe("CCM", () => {
         });
         it("Withdraw ETH that has been gathered for trades of 1% fee", async() => {
             await routerContract.chooseTaxTierLevel(testContract.address);
-            await routerContract.setETHTaxes(testContract.address, 2000, 1000, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 2000, 1000, owner.address);
             
             const aliceBefore = await testContract.balanceOf(alice.address);
             await routerByAlice.swapExactETHForTokens(
                 0, [wbnbContract.address, testContract.address], alice.address, (await time.latest()) + 300,
                 { value: parseEther("5")}
             );
+            expect((await routerContract.routerTaxesEarned(ethAddress))).to.deep.equal(parseEther("0.05"));
             const aliceAfterOne = await testContract.balanceOf(alice.address);
             await routerByAlice.swapExactETHForTokens(
                 0, [wbnbContract.address, testContract.address], alice.address, (await time.latest()) + 300,
@@ -1210,14 +1388,14 @@ describe("CCM", () => {
             );
             const bobAfter = await testContract.balanceOf(bob.address);
             const bobPurchasedTokens = bobAfter.sub(bobBefore);
-            const bobETHFromSell = (await routerByBob.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const bobETHFromSell = (await pcsRouterContract.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromBobSell = bobETHFromSell.mul(1500).div(10000);
             // Bob sell
             await routerByBob.swapExactTokensForETH(
                 bobPurchasedTokens, 0, [testContract.address, wbnbContract.address], bob.address, (await time.latest()) + 300
             );
             const alicePurchasedTokens = aliceAfterTwo.sub(aliceAfterOne);
-            const aliceETHFromSell = (await routerByAlice.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const aliceETHFromSell = (await pcsRouterContract.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromAliceSell = aliceETHFromSell.mul(1500).div(10000);
             // Alice sell
             await routerByAlice.swapExactTokensForETH(
@@ -1226,18 +1404,18 @@ describe("CCM", () => {
 
             // Claim router rewards
             const ownerBalanceBefore = await owner.getBalance();
-            const txn = await (await routerContract.withdrawExcessiveETH()).wait();
+            const txn = await (await routerContract.withdrawRouterTaxes(ethAddress)).wait();
             const txnCost = txn.effectiveGasPrice.mul(txn.gasUsed);
             const ownerBalanceAfter = await owner.getBalance();
 
             // 1% of 15 eth buy and two sells, also with 1%. Subtract txn costs as well.
             const expectedBalanceIncrease = parseEther("15").div(100).add(bobETHFromSell.div(100)).add(aliceETHFromSell.div(100)).sub(txnCost);
             expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore.add(expectedBalanceIncrease));
-            expect(await routerContract.totalETHTaxEarned()).eq(0);
+            expect(await routerContract.routerTaxesEarned(testContract.address)).eq(0);
         });
         it("Withdraw ETH that has been gathered for trades of 0.3% fee", async() => {
             await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("1")});
-            await routerContract.setETHTaxes(testContract.address, 2000, 1000, owner.address);
+            await routerContract.setTaxes(testContract.address, ethAddress, 2000, 1000, owner.address);
             
             const aliceBefore = await testContract.balanceOf(alice.address);
             await routerByAlice.swapExactETHForTokens(
@@ -1258,14 +1436,14 @@ describe("CCM", () => {
             );
             const bobAfter = await testContract.balanceOf(bob.address);
             const bobPurchasedTokens = bobAfter.sub(bobBefore);
-            const bobETHFromSell = (await routerByBob.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const bobETHFromSell = (await pcsRouterContract.getAmountsOut(bobPurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromBobSell = bobETHFromSell.mul(1500).div(10000);
             // Bob sell
             await routerByBob.swapExactTokensForETH(
                 bobPurchasedTokens, 0, [testContract.address, wbnbContract.address], bob.address, (await time.latest()) + 300
             );
             const alicePurchasedTokens = aliceAfterTwo.sub(aliceAfterOne);
-            const aliceETHFromSell = (await routerByAlice.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
+            const aliceETHFromSell = (await pcsRouterContract.getAmountsOut(alicePurchasedTokens, [testContract.address, wbnbContract.address]))[1];
             const ethFeeFromAliceSell = aliceETHFromSell.mul(1500).div(10000);
             // Alice sell
             await routerByAlice.swapExactTokensForETH(
@@ -1274,7 +1452,7 @@ describe("CCM", () => {
 
             // Claim router rewards
             const ownerBalanceBefore = await owner.getBalance();
-            const txn = await (await routerContract.withdrawExcessiveETH()).wait();
+            const txn = await (await routerContract.withdrawRouterTaxes(ethAddress)).wait();
             const txnCost = txn.effectiveGasPrice.mul(txn.gasUsed);
             const ownerBalanceAfter = await owner.getBalance();
 
@@ -1282,10 +1460,10 @@ describe("CCM", () => {
             // Also we sent in 1 eth initially to active fees, so plus that!
             const expectedBalanceIncrease = parseEther("1").add(parseEther("15").mul(3).div(1000)).add(bobETHFromSell.mul(3).div(1000)).add(aliceETHFromSell.mul(3).div(1000)).sub(txnCost);
             expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore.add(expectedBalanceIncrease));
-            expect(await routerContract.totalETHTaxEarned()).eq(0);
+            expect(await routerContract.routerTaxesEarned(testContract.address)).eq(0);
         });
         it("Only owner", async() => {
-            await expect(routerByAlice.withdrawExcessiveETH()).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(routerByAlice.withdrawRouterTaxes(ethAddress)).to.be.revertedWith("Ownable: caller is not the owner");
         });
     });
 })
@@ -1293,4 +1471,7 @@ describe("CCM", () => {
 // Utilities
 const approveTestContract = async(testContract: TestContract, signer: Signer, to: string) => {
     (await (await testContract.connect(signer)).approve(to, ethers.constants.MaxUint256))
+}
+const approveWbnbContract = async(wbnbContract: WBNB, signer: Signer, to: string) => {
+    (await (await wbnbContract.connect(signer)).approve(to, ethers.constants.MaxUint256))
 }

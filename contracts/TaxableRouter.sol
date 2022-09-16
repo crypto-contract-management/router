@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -13,6 +14,11 @@ interface IOwnable {
 abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeMath for uint;
 
+    // The native blockchain token has no contract address (obviously).
+    // We re-use the dead wallet address for that purpose.
+    // We cannot use the zero address as storage can be initialized to that value.
+    address constant internal ETH_ADDRESS = 0x000000000000000000000000000000000000dEaD;
+
     struct Tax {
         uint16 outTax;
         uint16 inTax;
@@ -23,18 +29,19 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     struct AccumulatedTax {
         uint16 totalOutTax;
         uint16 totalInTax;
-        uint accumulatedOutTax;
-        uint accumulatedInTax;
+        uint outTaxClaimable;
+        uint inTaxClaimable;
         uint autoClaimAt;
         uint claimCounter;
         uint totalTaxesClaimed;
     }
-
-    // Taxes for plain eth transfers.
+    // Mapping from a user token to a taxable token to the tax receivers for that taxable token.
+    // For example:
+    // User token: CCMT => Taxable token: WETH.
     // Each receiver can get different amount of taxes here.
-    mapping(address => Tax[]) public tokenETHTaxes;
+    mapping(address => mapping(address => Tax[])) public tokenTaxes;
     // Accumulated token taxes.
-    mapping(address => AccumulatedTax) public tokenETHTotalTaxes;
+    mapping(address => mapping(address => AccumulatedTax)) public tokenTotalTaxes;
     // Wallets authorized to set fees for contracts.
     mapping(address => address) public feeOwners;
 
@@ -48,18 +55,17 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
 
     // The taxes WE take from our clients.
     struct TokenBaseTax {
-        address token;
         bool isActive;
         uint16 tax;
     }
     // Remembers if a token has been registered by its owner to activate taxing.
-    mapping(address => TokenBaseTax) public tokenETHBaseTax;
-    // Save how much fees this router got so far.
-    uint public totalETHTaxEarned;
+    mapping(address => TokenBaseTax) public tokenBaseTax;
+    // Save how many fees this router got so far for every token.
+    mapping(address => uint) public routerTaxesEarned;
     /// @notice Makes sure taxes are initialized before trading is possible.
     /// @param token: Token to check if activated.
     modifier taxActive(address token) {
-        require(tokenETHBaseTax[token].isActive);
+        require(tokenBaseTax[token].isActive);
         _;
     }
 
@@ -81,10 +87,10 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         external onlyOwner {
             // Max tax is 1%.
             require(tax <= 100, "CCM: SET_TAX_TIER_LEVEL_INVALID_TAX");
-            TokenBaseTax memory taxEntry = tokenETHBaseTax[token];
+            TokenBaseTax memory taxEntry = tokenBaseTax[token];
             // If there is an entry the new tax has to be BETTER.
             require(!taxEntry.isActive || tax < taxEntry.tax, "CCM: SET_TAX_TIER_LEVEL_INVALID_TAX_UPDATE");
-            tokenETHBaseTax[token] = TokenBaseTax(token, true, tax);
+            tokenBaseTax[token] = TokenBaseTax(true, tax);
             emit SetTaxTierLevel(token, tax);
         }
     
@@ -111,42 +117,43 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // We also only want to have that exact amount, not more, not less.
         if(msg.value == expertFee){
             // Token must not be on expert level already
-            TokenBaseTax memory existing = tokenETHBaseTax[token];
+            TokenBaseTax memory existing = tokenBaseTax[token];
             require(!existing.isActive || existing.tax > 30);
-            tokenETHBaseTax[token] = TokenBaseTax(token, true, 30);
+            tokenBaseTax[token] = TokenBaseTax(true, 30);
         } else if(msg.value == apprenticeFee){
             // Token must not be on apprentice level or better already.
-            TokenBaseTax memory existing = tokenETHBaseTax[token];
+            TokenBaseTax memory existing = tokenBaseTax[token];
             require(!existing.isActive || existing.tax > 50);
-            tokenETHBaseTax[token] = TokenBaseTax(token, true, 50);
+            tokenBaseTax[token] = TokenBaseTax(true, 50);
         } else if(msg.value == 0) {
             // Token must not be initialized.
-            TokenBaseTax memory existing = tokenETHBaseTax[token];
+            TokenBaseTax memory existing = tokenBaseTax[token];
             require(!existing.isActive);
-            tokenETHBaseTax[token] = TokenBaseTax(token, true, 100);
+            tokenBaseTax[token] = TokenBaseTax(true, 100);
         } else {
             // No tier level selected. Reject.
             require(false, "CCM: NO_TIER_LEVEL_SELECTED");
         }
-        totalETHTaxEarned = totalETHTaxEarned.add(msg.value);
+        routerTaxesEarned[ETH_ADDRESS] += msg.value;
         emit ChoseTaxTierLevel(msg.sender, token);
     }
     /// @notice Allows to claim taxes of a specific token.
     /// @param token: Token in question to claim taxes from.
-    function claimTaxes(address token) public byFeeOwner(token){
-        _claimTaxes(token);
+    function claimTaxes(address token, address taxableToken) public byFeeOwner(token){
+        _claimTaxes(token, taxableToken);
     }
     /// @notice Does the tax claiming.
     /// @param token: Token in question to claim taxes from.
-    function _claimTaxes(address token) private nonReentrant {
+    /// @param taxableToken: Token from which those taxes have actually been taken from.
+    function _claimTaxes(address token, address taxableToken) private nonReentrant {
         // Transfer all accumulated funds accordingly.
         // Question: Isn't it dangerous to execute a `call` without a gas limit? (Reentrancy)
         // Answer: Well yes, but actually no. We have a reentrancy guard and update the state before we run the call.
-        uint totalTokenETHOutTax = tokenETHTotalTaxes[token].accumulatedOutTax;
-        uint totalTokenETHInTax = tokenETHTotalTaxes[token].accumulatedInTax;
-        uint16 totalTokenETHTaxOutPercent = tokenETHTotalTaxes[token].totalOutTax;
-        uint16 totalTokenETHTaxInPercent = tokenETHTotalTaxes[token].totalInTax;
-        Tax[] memory taxReceivers = tokenETHTaxes[token];
+        uint totalTokenETHOutTax = tokenTotalTaxes[token][taxableToken].outTaxClaimable;
+        uint totalTokenETHInTax = tokenTotalTaxes[token][taxableToken].inTaxClaimable;
+        uint16 totalTokenETHTaxOutPercent = tokenTotalTaxes[token][taxableToken].totalOutTax;
+        uint16 totalTokenETHTaxInPercent = tokenTotalTaxes[token][taxableToken].totalInTax;
+        Tax[] memory taxReceivers = tokenTaxes[token][taxableToken];
 
         for(uint i = 0; i < taxReceivers.length; ++i){
             uint fundsToTransfer = 0;
@@ -160,33 +167,37 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             }
             if(fundsToTransfer > 0){
                 address receiver = taxReceivers[i].receiver;
-                (bool success,) = payable(receiver).call{value: fundsToTransfer}("");
-                require(success, "CCM: ERROR_CLAIMING_TAX");
+                if(taxableToken == ETH_ADDRESS){
+                    (bool success,) = payable(receiver).call{value: fundsToTransfer}("");
+                    require(success, "CCM: ERROR_CLAIMING_TAX");
+                } else {
+                    IERC20(taxableToken).transfer(receiver, fundsToTransfer);
+                }
             }
         }
-        AccumulatedTax storage accTax = tokenETHTotalTaxes[token];
+        AccumulatedTax storage accTax = tokenTotalTaxes[token][taxableToken];
         accTax.totalTaxesClaimed = accTax.totalTaxesClaimed.add(totalTokenETHOutTax).add(totalTokenETHInTax);
-        accTax.accumulatedOutTax = 0;
-        accTax.accumulatedInTax = 0;
+        accTax.outTaxClaimable = 0;
+        accTax.inTaxClaimable = 0;
     }
 
     event SetAutoClaimTaxes(address, address, uint);
     /// @notice Allows a fee owner to define auto taxing settings.
     /// @notice Passing in 0 for `autoClaimAt` effectively disables auto claiming.
     /// @notice Auto claiming can be especially usefull for auto liquidity pool filling.
-    function setAutoClaimTaxes(address token, uint autoClaimAt) public byFeeOwner(token) {
-        AccumulatedTax memory taxEntry = tokenETHTotalTaxes[token];
+    function setAutoClaimTaxes(address token, address taxableToken, uint autoClaimAt) public byFeeOwner(token) {
+        AccumulatedTax memory taxEntry = tokenTotalTaxes[token][taxableToken];
         taxEntry.autoClaimAt = autoClaimAt;
         taxEntry.claimCounter = autoClaimAt;
-        tokenETHTotalTaxes[token] = taxEntry;
+        tokenTotalTaxes[token][taxableToken] = taxEntry;
         emit SetAutoClaimTaxes(msg.sender, token, autoClaimAt);
     }
-    function _autoClaimTaxes(address token) private {
-        AccumulatedTax storage taxEntry = tokenETHTotalTaxes[token];
+    function _autoClaimTaxes(address token, address taxableToken) private {
+        AccumulatedTax storage taxEntry = tokenTotalTaxes[token][taxableToken];
         if(taxEntry.autoClaimAt > 0){
             taxEntry.claimCounter = taxEntry.claimCounter.sub(1);
             if(taxEntry.claimCounter == 0){
-                _claimTaxes(token);
+                _claimTaxes(token, taxableToken);
                 taxEntry.claimCounter = taxEntry.autoClaimAt;
             }
         }
@@ -216,7 +227,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         feeOwners[token] = newOwner;
         emit TransferedFeeOwnership(msg.sender, token, newOwner);
     }
-    event SetETHTaxes(address, address, uint16, uint16, address);
+    event SetTaxes(address, address, uint16, uint16, address);
     /// @notice Allows a fee owner to set specific fees for a token and a receiver.
     /// @notice You are allowed to have multiple fee receivers with different taxes.
     /// @notice A common example would be an entry having a team wallet as receiver for development funds.
@@ -228,8 +239,8 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param outTax: Tax to send to receiver during ETH out transfers. Granulariy here is to 0.01%. So min after 0% is 0.01%, max is 100.00%.
     /// @param inTax: Same as outTax but just for ETH in transfers.
     /// @param receiver: Receiver of tax fees.
-    function setETHTaxes(
-        address token, 
+    function setTaxes(
+        address token, address taxableToken,
         uint16 outTax, uint16 inTax, 
         address receiver
     ) public byFeeOwner(token) {
@@ -238,7 +249,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint16 totalInTax = 0;
         uint8 entryFound = 0;
         
-        Tax[] memory memTaxes = tokenETHTaxes[token];
+        Tax[] memory memTaxes = tokenTaxes[token][taxableToken];
         // Check if entry already exists.
         for(uint i = 0; i < memTaxes.length; ++i){
             Tax memory memEntry = memTaxes[i];
@@ -247,16 +258,16 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             if(memEntry.receiver == receiver){
                 // Delete.
                 if(outTax == 0 && inTax == 0){
-                    AccumulatedTax storage accTaxToUpdate = tokenETHTotalTaxes[token];
+                    AccumulatedTax storage accTaxToUpdate = tokenTotalTaxes[token][taxableToken];
                     accTaxToUpdate.totalInTax -= memEntry.inTax;
                     accTaxToUpdate.totalOutTax -= memEntry.outTax;
                     // Delete entry to gain gas back and reset the state.
-                    tokenETHTaxes[token][i] = tokenETHTaxes[token][memTaxes.length - 1];
-                    tokenETHTaxes[token].pop();
-                    emit SetETHTaxes(msg.sender, token, outTax, inTax, receiver);
+                    tokenTaxes[token][taxableToken][i] = tokenTaxes[token][taxableToken][memTaxes.length - 1];
+                    tokenTaxes[token][taxableToken].pop();
+                    emit SetTaxes(msg.sender, token, outTax, inTax, receiver);
                     return;
                 }
-                Tax storage storageEntry = tokenETHTaxes[token][i];
+                Tax storage storageEntry = tokenTaxes[token][taxableToken][i];
                 storageEntry.outTax = outTax;
                 storageEntry.inTax = inTax;
                 totalOutTax += outTax;
@@ -270,59 +281,64 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // Not found. Add receiver tax and fully add to total tax.
         // Only if taxes are greather than 0 of course.
         if(entryFound == 0){
-            tokenETHTaxes[token].push(Tax(outTax, inTax, receiver));
+            tokenTaxes[token][taxableToken].push(Tax(outTax, inTax, receiver));
             totalOutTax += outTax;
             totalInTax += inTax;
         }
         // Save total tax again.
-        AccumulatedTax storage accTax = tokenETHTotalTaxes[token];
+        AccumulatedTax storage accTax = tokenTotalTaxes[token][taxableToken];
         accTax.totalInTax = totalInTax;
         accTax.totalOutTax = totalOutTax;
-        emit SetETHTaxes(msg.sender, token, outTax, inTax, receiver);
+        emit SetTaxes(msg.sender, token, outTax, inTax, receiver);
     }
 
     /// @notice Gives back all tax receivers for a certain token.
     /// @notice Necessary because the mapping alone does require an index for their ABI access.
-    function getAllETHTaxReceivers(address token) external view returns(Tax[] memory receivers){
-        receivers = tokenETHTaxes[token];
+    function getAllETHTaxReceivers(address token, address taxableToken) external view returns(Tax[] memory receivers){
+        receivers = tokenTaxes[token][taxableToken];
     }
 
     /// @notice Allows the router owner to get the ETH given by for example tax tier level setup.
     /// @notice This function also ensures that the owner is NOT able to withdraw more ETH than being excessive.
-    function withdrawExcessiveETH() external onlyOwner {
-        uint withdrawableETH = totalETHTaxEarned;
-        totalETHTaxEarned = 0;
-        (bool success, ) = payable(owner()).call{value: withdrawableETH}("");
-        require(success);
+    function withdrawRouterTaxes(address token) external onlyOwner {
+        uint withdrawableTokens = routerTaxesEarned[token];
+        routerTaxesEarned[token] = 0;
+        if(withdrawableTokens > 0){ 
+            if(token == TaxableRouter.ETH_ADDRESS){
+                (bool success, ) = payable(owner()).call{value: withdrawableTokens}("");
+                require(success);
+            } else {
+                require(IERC20(token).transfer(owner(), withdrawableTokens));
+            }
+        }
     }
     /// @notice Takes the ETH fee for transfers where ETH is sent IN (to the token pair).
-    function takeETHInTax(
-        address token, uint amountIn
+    function takeInTax(
+        address token, address taxableToken, uint amountIn
     ) internal taxActive(token) returns (uint amountInLeft) {
         // Claim all in taxes for all receivers.
-        uint16 taxDefinedByToken = tokenETHTotalTaxes[token].totalInTax;
-        uint16 taxDefinedByRouter = tokenETHBaseTax[token].tax;
+        uint16 taxDefinedByToken = tokenTotalTaxes[token][taxableToken].totalInTax;
+        uint16 taxDefinedByRouter = tokenBaseTax[token].tax;
         uint taxToTakeByToken = calculateTax(taxDefinedByToken, amountIn);
         uint taxToTakeByRouter = calculateTax(taxDefinedByRouter, amountIn);
-        tokenETHTotalTaxes[token].accumulatedInTax = tokenETHTotalTaxes[token].accumulatedInTax.add(taxToTakeByToken);
-        totalETHTaxEarned = totalETHTaxEarned.add(taxToTakeByRouter);
+        tokenTotalTaxes[token][taxableToken].inTaxClaimable = tokenTotalTaxes[token][taxableToken].inTaxClaimable.add(taxToTakeByToken);
+        routerTaxesEarned[taxableToken] += taxToTakeByRouter;
 
         amountInLeft = amountIn.sub(taxToTakeByToken).sub(taxToTakeByRouter);
-        _autoClaimTaxes(token);
+        _autoClaimTaxes(token, taxableToken);
     }
     /// @notice Takes the ETH fee for transfers where ETH is sent OUT (of the token pair).
-    function takeETHOutTax(
-        address token, uint amountOut
+    function takeOutTax(
+        address token, address taxableToken, uint amountOut
     ) internal taxActive(token) returns (uint amountOutLeft) {
-        uint16 taxDefinedByToken = tokenETHTotalTaxes[token].totalOutTax;
-        uint16 taxDefinedByRouter = tokenETHBaseTax[token].tax;
+        uint16 taxDefinedByToken = tokenTotalTaxes[token][taxableToken].totalOutTax;
+        uint16 taxDefinedByRouter = tokenBaseTax[token].tax;
         uint taxToTakeByToken = calculateTax(taxDefinedByToken, amountOut);
         uint taxToTakeByRouter = calculateTax(taxDefinedByRouter, amountOut);
-        tokenETHTotalTaxes[token].accumulatedOutTax = tokenETHTotalTaxes[token].accumulatedOutTax.add(taxToTakeByToken);
-        totalETHTaxEarned = totalETHTaxEarned.add(taxToTakeByRouter);
-
+        tokenTotalTaxes[token][taxableToken].outTaxClaimable = tokenTotalTaxes[token][taxableToken].outTaxClaimable.add(taxToTakeByToken);
+        routerTaxesEarned[taxableToken] += taxToTakeByRouter;
         amountOutLeft = amountOut.sub(taxToTakeByToken).sub(taxToTakeByRouter);
-        _autoClaimTaxes(token);
+        _autoClaimTaxes(token, taxableToken);
     }
     /// @notice Helper method to calculate the takes to take.
     /// @dev Actually we want to first multiply and then divide.
