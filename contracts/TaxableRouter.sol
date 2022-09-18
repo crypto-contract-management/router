@@ -161,11 +161,20 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function _claimTaxes(address token, address taxableToken, uint taxesToClaim) private nonReentrant {
         tokenTaxesClaimable[token][taxableToken] = 0;
         tokenTaxesClaimed[token][taxableToken] += taxesToClaim;
-        require(IERC20(taxableToken).transfer(token, taxesToClaim));
-        // This one is important. We notify the contract about the claim.
-        // That way the contract can do various things such as adding liquidity
-        // ,distributing funds (marketing, development) or other.
-        ITaxToken(token).onTaxClaimed(taxableToken, taxesToClaim);
+        if(taxableToken == ETH_ADDRESS){
+            (bool success, ) = payable(token).call{value: taxesToClaim}("");
+            require(success);
+            // Note: Here we are not calling the contract to inform it about the received tokens.
+            // Reason is that the token already knows how many tokens it got and what the source has been.
+            // The token can check for the sender address in its fallback function to notice it's a tax claim.
+            // That way we safe gas by avoiding unnecessary calls.
+        } else {
+            require(IERC20(taxableToken).transfer(token, taxesToClaim));
+            // This one is important. We notify the contract about the claim.
+            // That way the contract can do various things such as adding liquidity
+            // ,distributing funds (marketing, development) or other.
+            ITaxToken(token).onTaxClaimed(taxableToken, taxesToClaim);
+        }
     }
     event ClaimedInitialFeeOwnership(address, address);
     /// @notice Let's a token owner claim the initial fee ownership.
@@ -227,7 +236,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param amount The total amount to take taxes from
     /// @return taxTaken The tax taken by us (the router)
     function takeRouterTax(address token, address taxableToken, uint amount) private returns (uint taxTaken){
-        uint taxTaken = calculateTax(tokenBaseTax[token].tax, amount);
+        taxTaken = calculateTax(tokenBaseTax[token].tax, amount);
         routerTaxesClaimable[taxableToken] += taxTaken;
     }
     
