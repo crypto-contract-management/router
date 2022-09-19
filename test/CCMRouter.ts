@@ -6,7 +6,7 @@ import * as eths from "ethers";
 import { formatEther } from "ethers/lib/utils";
 import { ethers, upgrades } from "hardhat";
 
-import { PancakeFactory, PancakeFactory__factory, PancakePair, PancakePair__factory, PancakeRouter, PancakeRouterV2, PancakeRouterV2__factory, PancakeRouter__factory, CCMRouter, CCMRouter__factory, TestContract, MyWBNB, MyWBNB__factory } from "../typechain-types";
+import { PancakeFactory, PancakeFactory__factory, PancakePair, PancakePair__factory, PancakeRouter, PancakeRouterV2, PancakeRouterV2__factory, PancakeRouter__factory, CCMRouter, CCMRouter__factory, TestContract, MyWBNB, MyWBNB__factory, TCInBetweenSecond, TCInBetweenFirst, TCStackingSellTax } from "../typechain-types";
 const { parseEther } = ethers.utils;
 
 // Anything below 10 difference is sufficiently equal enough (rounding errors).
@@ -242,7 +242,7 @@ describe("CCM", () => {
             // Activate taxes
             await routerContract.chooseTaxTierLevel(testContract.address);
         });
-        it("5% buy 15% sell, owner free, ETH=>TOKEN & TOKEN=>ETH", async() => {
+        it("5% buy 15% sell static, owner free, ETH=>TOKEN & TOKEN=>ETH", async() => {
             // Prepare contract.
             const testContract = await (await ethers.getContractFactory("TCFixedTaxes")).deploy(routerContract.address);
             testContract.transfer(alice.address, parseEther("1000"));
@@ -348,7 +348,6 @@ describe("CCM", () => {
         let routerByBob: CCMRouter;
         let testContract: TCInBetweenFirst;
         let testContract2: TCInBetweenSecond;
-        let testContract3: TCInBetweenSecond;
         beforeEach(async() => {
             // Prepare contract.
             testContract = await (await ethers.getContractFactory("TCInBetweenFirst")).deploy(routerContract.address);
@@ -413,43 +412,120 @@ describe("CCM", () => {
             // Set taxes
             await routerContract.claimInitialFeeOwnership(testContract2.address);
             await routerContract.chooseTaxTierLevel(testContract2.address);
-            // Provide another test contract for direct pairing to simulate trading tokens without fees.
-            // Path is: TestContract1 <=> TestContract 2
-            testContract3 = await (await ethers.getContractFactory("TCInBetweenSecond")).deploy(routerContract.address);
-            testContract3.transfer(alice.address, parseEther("1000"));
-            testContract3.transfer(bob.address,  parseEther("1000"));
+        });
+        it("First contract sells for 69.69% and buys for 22.27%, second one sells for 25% and buys 10% (WETH)", async() => {
+            // Alice buys second token for first token once and buys first token for second token once:
+            // 1. Sells 10 ETH worth of token 1 to buy token 2. => First: 6.969 - Second: 0.2931 WETH fee.
+            // 2. Sells 20 ETH worth of token 2 to buy token 1 => Second: 5 - First: 3.29596 WETH fee.
+            // First total: 10.26496 WETH.
+            // Second total: 5.2931 WETH.
+            const tcFirstContractWethGainedExpected = parseEther("10.26496");
+            const tcSecondContractWethGainedExpected = parseEther("5.2931");
+            const tcFirstContractWethBefore = await MyWBNBContract.balanceOf(testContract.address);
+            const tcSecondContractWethBefore = await MyWBNBContract.balanceOf(testContract2.address);
+            const tcFirstRequiredForSell = (await pcsRouterContract.getAmountsIn(
+                parseEther("10"), [testContract.address, MyWBNBContract.address]
+            ))[0];
+            // Alice: Sell tc first to buy tc second!
+            await routerByAlice.swapExactTokensForTokens(
+                tcFirstRequiredForSell, 0,
+                [testContract.address, MyWBNBContract.address, testContract2.address],
+                alice.address, (await time.latest()) + 30
+            );
+            // Fine. Now sell tokens worth of 20 eth of tc second to get tc first.
+            const tcSecondRequiredForSell = (await pcsRouterContract.getAmountsIn(
+                parseEther("20"), [testContract2.address, MyWBNBContract.address]
+            ))[0];
+            // Alice: Sell tc second to buy tc first!
+            await routerByAlice.swapExactTokensForTokens(
+                tcSecondRequiredForSell, 0,
+                [testContract2.address, MyWBNBContract.address, testContract.address],
+                alice.address, (await time.latest()) + 30
+            );
+            const tcFirstContractWethAfter = await MyWBNBContract.balanceOf(testContract.address);
+            const tcSecondContractWethAfter = await MyWBNBContract.balanceOf(testContract2.address);
+            const tcFirstContractWethGained = tcFirstContractWethAfter.sub(tcFirstContractWethBefore);
+            const tcSecondContractWethGained = tcSecondContractWethAfter.sub(tcSecondContractWethBefore);
+            expect(tcFirstContractWethGained).to.eq(tcFirstContractWethGainedExpected);
+            expect(tcSecondContractWethGained).to.eq(tcSecondContractWethGainedExpected);
+        });
+        it("Contract sells stack for 10% for each sell, reset on buy. Check if bob gets all the fees", async() => {
+            const tcStackingSellContract = await (await ethers.getContractFactory("TCStackingSellTax")).deploy(routerContract.address, bob.address);
+            tcStackingSellContract.transfer(alice.address, parseEther("1000"));
+            tcStackingSellContract.transfer(bob.address,  parseEther("1000"));
             // Create pair.
-            const testContract3MyWBNBPair = (await factoryContract.callStatic.createPair(testContract3.address, testContract2.address));
-            await factoryContract.createPair(testContract3.address, testContract2.address);
-            await testContract3.setIsPair(testContract3MyWBNBPair, 1);
+            const tcStackingSellContractMyWBNBPair = (await factoryContract.callStatic.createPair(tcStackingSellContract.address, MyWBNBContract.address));
+            await factoryContract.createPair(tcStackingSellContract.address, MyWBNBContract.address);
+            await tcStackingSellContract.setIsPair(tcStackingSellContractMyWBNBPair, 1);
             // Provide liquidity.
-            await testContract3.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
+            await tcStackingSellContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
+            await MyWBNBContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidity(
-                testContract3.address,
-                testContract2.address,
+                tcStackingSellContract.address,
+                MyWBNBContract.address,
                 parseEther("100"), parseEther("100"),
                 parseEther("100"), parseEther("100"),
                 owner.address, (await time.latest()) + 300,
             );
             // Prepare alice.
-            await approveTestContract(testContract3, alice, routerByAlice.address);
+            await approveTestContract(tcStackingSellContract, alice, routerByAlice.address);
             // Prepare bob
-            await approveTestContract(testContract3, bob, routerByBob.address);
-            // Now we can declare the fees:
-            // 1: 22.27% OUT (someone is giving tokens in and taking WETH OUT of the pool) for test contract 1
-            // 2: 50% IN (someone is giving WETH IN to the pool) for test contract 2
-            // The other fees (IN for test contract 1 and OUT for test contract 2) can be arbitrarily chosen
-            // to make sure only the respective IN/OUT fees are taken. So they should just be greater than 0.
-            // Set taxes
-            await routerContract.claimInitialFeeOwnership(testContract3.address);
-            await routerContract.chooseTaxTierLevel(testContract3.address);
-        });
-        it("First contract sells for 69.69% and buys for 22.27%, second one sells for 25% and buys 10% (WETH)", async() => {
-            // Alice buys second token for first token once and buys first token for second token once:
-            // 1. Sells 10 ETH worth of token 1 to buy token 2. => 6.969 sell fee and 1 buy fee = 7.696 WETH fee.
-            // 2. Sells 20 ETH worth of token 2 to buy token 1 => 5 sell fee and 4.454 buy fee => 9.454 WETH fee.
-        });
-        
+            await approveTestContract(tcStackingSellContract, bob, routerByBob.address);
+            // Init tax system.
+            await routerContract.claimInitialFeeOwnership(tcStackingSellContract.address);
+            await routerContract.chooseTaxTierLevel(tcStackingSellContract.address);
+            // Now let alice trade and bob receive the fees:
+            // 1. One sell for 10 WETH => 1 WETH fee.
+            // 2. One sell for 15 WETH => 3 WETH fee.
+            // 3. One sell for 10 WETH => 3 WETH fee.
+            // 4. One buy for 25 WETH => 0 WETH fee.
+            // 5. One sell for 5 WETH => 0.5 WETH fee.
+            // Total fees earned: 7.5 WETH.
+            const bobWethGainedExpected = parseEther("7.5");
+            const bobWethBefore = await MyWBNBContract.balanceOf(bob.address);
+            let tokensNeededForSell = (await pcsRouterContract.getAmountsIn(
+                parseEther("10"), [tcStackingSellContract.address, MyWBNBContract.address]
+            ))[0];
+            await routerByAlice.swapExactTokensForTokens(
+                tokensNeededForSell, 0,
+                [tcStackingSellContract.address, MyWBNBContract.address],
+                alice.address, (await time.latest()) + 30
+            );
+            tokensNeededForSell = (await pcsRouterContract.getAmountsIn(
+                parseEther("15"), [tcStackingSellContract.address, MyWBNBContract.address]
+            ))[0];
+            await routerByAlice.swapExactTokensForTokens(
+                tokensNeededForSell, 0,
+                [tcStackingSellContract.address, MyWBNBContract.address],
+                alice.address, (await time.latest()) + 30
+            );
+            tokensNeededForSell = (await pcsRouterContract.getAmountsIn(
+                parseEther("10"), [tcStackingSellContract.address, MyWBNBContract.address]
+            ))[0];
+            await routerByAlice.swapExactTokensForTokens(
+                tokensNeededForSell, 0,
+                [tcStackingSellContract.address, MyWBNBContract.address],
+                alice.address, (await time.latest()) + 30
+            );
+            const tokensNeededForBuy = parseEther("10");
+            await approveMyWBNBContract(MyWBNBContract, alice, routerByAlice.address);
+            await routerByAlice.swapExactTokensForTokens(
+                tokensNeededForBuy, 0,
+                [MyWBNBContract.address, tcStackingSellContract.address],
+                alice.address, (await time.latest()) + 30
+            );
+            tokensNeededForSell = (await pcsRouterContract.getAmountsIn(
+                parseEther("5"), [tcStackingSellContract.address, MyWBNBContract.address]
+            ))[0];
+            await routerByAlice.swapExactTokensForTokens(
+                tokensNeededForSell, 0,
+                [tcStackingSellContract.address, MyWBNBContract.address],
+                alice.address, (await time.latest()) + 30
+            );
+            const bobWethAfter = await MyWBNBContract.balanceOf(bob.address);
+            const bobWethGained = bobWethAfter.sub(bobWethBefore);
+            expect(bobWethGained).to.eq(bobWethGainedExpected);
+        })
     });
     return;/*
     describe("Test tax tier levels", async() => {

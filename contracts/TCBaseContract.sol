@@ -62,7 +62,7 @@ abstract contract TCBaseContract is ERC20, ITaxToken {
     }
 
 
-    function onTaxClaimed(address taxableToken, uint amount) external {
+    function onTaxClaimed(address taxableToken, uint amount) external virtual {
 
     }
 

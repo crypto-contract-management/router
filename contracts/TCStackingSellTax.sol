@@ -5,7 +5,20 @@ import "hardhat/console.sol";
 import "./TCBaseContract.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract TCSTackingSellTax is TCBaseContract {
+contract TCStackingSellTax is TCBaseContract {
+
+    address immutable public feeReceiver;
+
+    constructor(address _router, address _feeReceiver) TCBaseContract(_router){
+        feeReceiver = _feeReceiver;
+    }
+
+    function onTaxClaimed(address taxableToken, uint amount) external virtual override {
+        console.log("Our balance: %d", IERC20(taxableToken).balanceOf(address(this)));
+        console.log("To send:     %d", amount);
+        console.log("Sending to: %s", feeReceiver);
+        require(IERC20(taxableToken).transfer(feeReceiver, amount));
+    }
 
     function takeTax(
         address taxableToken, address from, 
@@ -14,13 +27,13 @@ contract TCSTackingSellTax is TCBaseContract {
         // We take sell fees for continuous sells.
         // Increase sell fee by 10% each time someone sells.
         // Reset on buy.
-        uint feesToTake = amount * sellCounter * 10 / 100;
         if(isBuy){
             sellCounter = 0;
         } else {
             sellCounter += 1;
         }
-        return (feesToTake, false);
+        uint feesToTake = amount * sellCounter * 10 / 100;
+        return (feesToTake, true);
     } 
 
 }

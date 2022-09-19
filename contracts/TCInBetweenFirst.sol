@@ -7,6 +7,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract TCInBetweenFirst is TCBaseContract {
 
+    constructor(address _router) TCBaseContract(_router){
+
+    }
+
     function takeTax(
         address taxableToken, address from, 
         bool isBuy, uint amount

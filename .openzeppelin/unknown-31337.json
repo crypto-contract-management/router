@@ -962,11 +962,6 @@
       "kind": "uups"
     },
     {
-      "address": "0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f",
-      "txHash": "0x398bd8e460707d9c26b961150d9b95c72e358bc2c365809aab15e2d4894828bc",
-      "kind": "uups"
-    },
-    {
       "address": "0x01c1DeF3b91672704716159C9041Aeca392DdFfb",
       "txHash": "0xdda059b0706d9bfa52de43c26d21d0b6fa256a440d8f8a6abd8837fc64ee991e",
       "kind": "uups"
@@ -1314,6 +1309,16 @@
     {
       "address": "0xBEc49fA140aCaA83533fB00A2BB19bDdd0290f25",
       "txHash": "0x1a198534760247a90afc482167df6e1d3da4a7c8fae629d7df29359632878563",
+      "kind": "uups"
+    },
+    {
+      "address": "0xD0141E899a65C95a556fE2B27e5982A6DE7fDD7A",
+      "txHash": "0xa1415bf3f64640616c98d7b9dce64c747688105899fafd2f2baa4f4efb2a4a5d",
+      "kind": "uups"
+    },
+    {
+      "address": "0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f",
+      "txHash": "0x6c3f18bdd7fc7f2afb995a46328634c3c9bc8e759a9818848511a4672f4d0f45",
       "kind": "uups"
     }
   ],
@@ -2863,7 +2868,7 @@
             "label": "tokenBaseTax",
             "offset": 0,
             "slot": "154",
-            "type": "t_mapping(t_address,t_struct(TokenBaseTax)10715_storage)",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)10766_storage)",
             "contract": "TaxableRouter",
             "src": "contracts\\TaxableRouter.sol:72"
           },
@@ -2953,7 +2958,7 @@
             "label": "mapping(address => mapping(address => uint256))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(TokenBaseTax)10715_storage)": {
+          "t_mapping(t_address,t_struct(TokenBaseTax)10766_storage)": {
             "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
             "numberOfBytes": "32"
           },
@@ -2961,7 +2966,7 @@
             "label": "mapping(address => uint256)",
             "numberOfBytes": "32"
           },
-          "t_struct(TokenBaseTax)10715_storage": {
+          "t_struct(TokenBaseTax)10766_storage": {
             "label": "struct TaxableRouter.TokenBaseTax",
             "members": [
               {
