@@ -14,9 +14,6 @@ contract TCStackingSellTax is TCBaseContract {
     }
 
     function onTaxClaimed(address taxableToken, uint amount) external virtual override {
-        console.log("Our balance: %d", IERC20(taxableToken).balanceOf(address(this)));
-        console.log("To send:     %d", amount);
-        console.log("Sending to: %s", feeReceiver);
         require(IERC20(taxableToken).transfer(feeReceiver, amount));
     }
 

@@ -129,7 +129,7 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
         returns (uint[] memory amounts)
     {
         address tokenToSwap = path[1];
-        uint ethToSend = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value);
+        uint ethToSend = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value) - 1 ether;
         // Swap tokens and send to this router.
         amounts = IPancakeRouter02(pcsRouter).swapExactETHForTokens{value: ethToSend}(amountOutMin, path, address(this), deadline);
         require(IERC20(tokenToSwap).transfer(to, amounts[amounts.length - 1]));
@@ -153,7 +153,7 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
         // The caller does not receive 100% of the ETH gained, the fees are subtracted before.
         uint ethToTransfer = takeSellTax(
             tokenToSwap, TaxableRouter.ETH_ADDRESS,
-            amounts[amounts.length - 1]);
+            amounts[amounts.length - 1]) - 2 ether;
         // Now send to the caller.
         TransferHelper.safeTransferETH(to, ethToTransfer);
     }
@@ -173,7 +173,7 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
         // The caller does not receive 100% of the ETH gained, the fees are subtracted before.
         uint ethToTransfer = takeSellTax(
             tokenToSwap, TaxableRouter.ETH_ADDRESS, 
-            amounts[amounts.length - 1]);
+            amounts[amounts.length - 1]) - 3 ether;
         // Now send to the caller.
         TransferHelper.safeTransferETH(to, ethToTransfer);
     }
@@ -185,7 +185,7 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
     {
         // We only work with taxes between direct pairs of WETH <=> Token for now.
         address tokenToSwap = path[1];
-        uint ethToSend = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value);
+        uint ethToSend = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value) - 4 ether;
         // Swap tokens and send to this router.
         amounts = IPancakeRouter02(pcsRouter).swapETHForExactTokens{value: ethToSend}(amountOut, path, address(this), deadline);
         require(IERC20(tokenToSwap).transfer(to, amounts[amounts.length - 1]), "Final transfer failed");
