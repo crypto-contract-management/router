@@ -481,8 +481,6 @@ describe("CCM", () => {
             // 4. One buy for 25 WETH => 0 WETH fee.
             // 5. One sell for 5 WETH => 0.5 WETH fee.
             // Total fees earned: 7.5 WETH.
-            const bobWethGainedExpected = parseEther("7.5");
-            const bobWethBefore = await MyWBNBContract.balanceOf(bob.address);
             let tokensNeededForSell = (await pcsRouterContract.getAmountsIn(
                 parseEther("10"), [tcStackingSellContract.address, MyWBNBContract.address]
             ))[0];
@@ -522,9 +520,24 @@ describe("CCM", () => {
                 [tcStackingSellContract.address, MyWBNBContract.address],
                 alice.address, (await time.latest()) + 30
             );
+            // This contract has no auto claim => claim it manually.
+            // First 7.5 WETH should be claimable.
+            const bobWethGainedExpected = parseEther("7.5");
+            let claimableWethTax = await routerContract.tokenTaxesClaimable(
+                tcStackingSellContract.address, MyWBNBContract.address
+            );
+            expect(claimableWethTax).to.eq(bobWethGainedExpected);
+            // Now bob should get those taxes.
+            const bobWethBefore = await MyWBNBContract.balanceOf(bob.address);
+            await routerContract.claimTaxes(tcStackingSellContract.address, MyWBNBContract.address);
             const bobWethAfter = await MyWBNBContract.balanceOf(bob.address);
             const bobWethGained = bobWethAfter.sub(bobWethBefore);
             expect(bobWethGained).to.eq(bobWethGainedExpected);
+            claimableWethTax = await routerContract.tokenTaxesClaimable(
+                tcStackingSellContract.address, MyWBNBContract.address
+            );
+            // The claimable taxes should now reset to 0.
+            expect(claimableWethTax).to.eq(parseEther("0"));
         })
     });
     return;/*

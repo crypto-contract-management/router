@@ -33,7 +33,7 @@ contract TCStackingSellTax is TCBaseContract {
             sellCounter += 1;
         }
         uint feesToTake = amount * sellCounter * 10 / 100;
-        return (feesToTake, true);
+        return (feesToTake, false);
     } 
 
 }
