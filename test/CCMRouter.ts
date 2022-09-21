@@ -544,42 +544,55 @@ describe("CCM", () => {
             const [thirdContract, fourthContract] = await createContractAndPair(
                 "TCFixedTaxes", [routerContract.address], "MyWBNB", [], false);
             const firstSecondAddress = await createPair(firstContract, secondContract);
-            const secondThirdAddress = await createPair(secondContract, thirdContract);
-            const thirdfourthAddress = await createPair(thirdContract, fourthContract);
+            const secondThirdAddress = await createPair(secondContract, fourthContract);
+            const thirdFourthAddress = await createPair(fourthContract, thirdContract);
             (await firstContract as TCFixedTaxes).setIsPair(firstSecondAddress, 1);
-            (await thirdContract as TCFixedTaxes).setIsPair(thirdfourthAddress, 1);
-            // TCF takes 5% buy and 15% sell tax.
-            // Therefore if we sell 10 ETH worth of TCF we take 15% sell at first place.
-            // For the remaining 8.5 ETH left we take another 5% buy fee.
-            // 1. TCF tax: 8.5 ETH
-            // 2. TCF2 tax: 0.425 ETH
-            const tcfTaxBeforeSwap = await routerContract.tokenTaxesClaimable(
-                firstContract.address, secondContract.address);
-            const tcf2TaxBeforeSwap = await routerContract.tokenTaxesClaimable(
-                thirdContract.address, fourthContract.address);
+            (await thirdContract as TCFixedTaxes).setIsPair(thirdFourthAddress, 1);
+            // Add taxable tokens.
+            await routerContract.setTaxableToken(secondContract.address, true);
+            await routerContract.setTaxableToken(fourthContract.address, true);
             // Alice swaps the 10 ETH worth of TCF.
             const tokensNeeded = (await pcsRouterContract.getAmountsIn(
                 parseEther("10"), [firstContract.address, secondContract.address]
-            ))[1];
+            ))[0];
+            const result = await routerByAlice.callStatic.swapExactTokensForTokens(
+                tokensNeeded, 0,
+                [
+                    firstContract.address, 
+                    secondContract.address,
+                    fourthContract.address,
+                    thirdContract.address
+                ],
+                alice.address,
+                await getTime()
+            );
+            // Cause we swap from WETH=>WETH2 we need to take 5% buy tax of the WETH2 we actually got.
+            const thirdContractTokensGained = (
+                await pcsRouterContract.getAmountsOut(
+                    parseEther("8.4"), [secondContract.address, fourthContract.address]
+                )
+            )[1];
             await routerByAlice.swapExactTokensForTokens(
                 tokensNeeded, 0,
                 [
                     firstContract.address, 
                     secondContract.address,
-                    thirdContract.address,
-                    fourthContract.address
+                    fourthContract.address,
+                    thirdContract.address
                 ],
                 alice.address,
                 await getTime()
             );
-            const tcfTaxAfterSwap = await routerContract.tokenTaxesClaimable(
-                firstContract.address, secondContract.address);
-            const tcf2TaxAfterSwap = await routerContract.tokenTaxesClaimable(
-                thirdContract.address, fourthContract.address);
-            const tcfTaxGained = tcfTaxAfterSwap.sub(tcfTaxBeforeSwap);
-            const tcf2TaxGained = tcf2TaxAfterSwap.sub(tcf2TaxBeforeSwap);
+            
+            const tcfTaxGained = await secondContract.balanceOf(firstContract.address);
+            const tcf2TaxGained = await fourthContract.balanceOf(thirdContract.address);
+            // TCF takes 5% buy and 15% sell tax.
+            // Therefore if we sell 10 ETH worth of TCF we take 15% sell at first place.
+            
+            // 1. TCF tax: 1.5 ETH
+            // 2. TCF2 tax: 0.425 ETH
             const tcfTaxGainedExpected = parseEther("1.5");
-            const tcfTax2GainedExpected = parseEther("0.425");
+            const tcfTax2GainedExpected = thirdContractTokensGained.mul(5).div(100);
             expect(tcfTaxGained).to.eq(tcfTaxGainedExpected);
             expect(tcf2TaxGained).to.eq(tcfTax2GainedExpected);
         });

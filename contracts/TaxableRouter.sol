@@ -47,11 +47,6 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     // Maps for example: CCMT => WETH => 5 ether.
     // Then CCMT contract can claim 5 ether of WETH.
     mapping(address => mapping(address => uint)) public tokenTaxesClaimable;
-    // Just to keep track of all taxes claimed.
-    // Theoretically possible by emitting events, but we want it to be easy.
-    // We want to be able to look those up for statistics in an easy way
-    // without quering the whole blockchain for events (tedious).
-    mapping(address => mapping(address => uint)) public tokenTaxesClaimed;
     // Wallets authorized to set fees for contracts.
     mapping(address => address) public feeOwners;
 
@@ -160,7 +155,6 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @param taxableToken: Token from which those taxes have actually been taken from.
     function _claimTaxes(address token, address taxableToken, uint taxesToClaim) private nonReentrant {
         tokenTaxesClaimable[token][taxableToken] = 0;
-        tokenTaxesClaimed[token][taxableToken] += taxesToClaim;
         if(taxableToken == ETH_ADDRESS){
             (bool success, ) = payable(token).call{value: taxesToClaim}("");
             require(success);
@@ -259,6 +253,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         tokenTaxesClaimable[token][taxableToken] = tokenTaxes;
         if(claimAfter && tokenTaxes > 0)
             _claimTaxes(token, taxableToken, tokenTaxes);
+        
         // We take fees based upon your tax tier level,
         uint routerTaxToTake = takeRouterTax(token, taxableToken, amount);
         amountLeft = amount - tokenTaxToTake - routerTaxToTake;
