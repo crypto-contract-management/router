@@ -47,13 +47,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
     /// @notice Sets a taxable IERC20 token and potentially allows all routers to spend this token.
     /// @param token Token to tax
     function setTaxableToken(address token, bool isTaxable) public onlyOwner {
-        if(isTaxable){
-            taxableToken[token] = true;
-            IERC20(token).approve(pcsRouter, ~uint(0));
-        } else {
-            taxableToken[token] = false;
-            IERC20(token).approve(pcsRouter, 0);
-        }
+        taxableToken[token] = true;
     }
 
     function swapExactTokensForTokens(
@@ -71,6 +65,11 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         address tokenSentIn = path[0];
         address tokenTakenOut = path[path.length - 1];
         IERC20(tokenSentIn).transferFrom(msg.sender, address(this), amountIn);
+        // We save the index we last swapped.
+        // That way if we finish the path list we can send the user
+        // their final tokens by taking the path from the last index swapped
+        // to the end of the path.
+        uint lastSwapIndex = 0;
         for(uint i = 0; i < path.length; ++i){
             if(taxableToken[path[i]]){
                 // Token buy fees.
@@ -78,8 +77,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
                     uint tokensToSend = takeBuyTax(path[1], path[0], amountIn);
                     IERC20(tokenSentIn).approve(pcsRouter, tokensToSend);
                     amounts = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
-                        tokensToSend, amountOutMin, path, address(this), deadline);
-                    amounts[0] = tokensToSend;
+                        tokensToSend, amountOutMin, path[0:2], address(this), deadline);    
                 }
                 // Token sell fees.
                 else if(i == path.length - 1) {
@@ -88,22 +86,24 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
                         amountIn, amountOutMin, path, address(this), deadline);
                     uint tokensToSend = takeSellTax(path[i - 1], path[i], amounts[amounts.length - 1]);
                     amounts[amounts.length - 1] = tokensToSend;
+                    require(IERC20(tokenTakenOut).transfer(to, amounts[amounts.length - 1]));
+                    return amounts;
                 }
                 // Token is somewhere in between. 
-                // Take out fees for the selling token and in fees for the buying token.
+                // Take out fees for the selling token and in fees for the buying token, updating amounts.
+                // Then continue.
                 else {
                     // Swap until taxable token.
                     IERC20(tokenSentIn).approve(pcsRouter, amountIn);
                     uint[] memory amountsSwapped = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
-                        amountIn, amountOutMin, path[:i + 1], address(this), deadline);
+                        amountIn, amountOutMin, path[lastSwapIndex + 1:i + 1], address(this), deadline);
                     // Take out taxes for the preceeding token and in taxes for the succeeding token.
                     uint tokensAfterSellTaxes = takeSellTax(path[i - 1], path[i], amountsSwapped[amountsSwapped.length - 1]);
                     uint tokensAfterBuyTaxes = takeBuyTax(path[i + 1], path[i], tokensAfterSellTaxes);
                     amounts = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
                         tokensAfterBuyTaxes, amountOutMin, path[i:], address(this), deadline);
+                    lastSwapIndex = i;
                 }
-                require(IERC20(tokenTakenOut).transfer(to, amounts[amounts.length - 1]));
-                return amounts;
             }
         }
         // If we reached this point there has not been any taxable token in the path.
@@ -111,7 +111,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         IERC20(tokenSentIn).approve(pcsRouter, amountIn);
         amounts = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
             amountIn, amountOutMin, path, address(this), deadline);
-        require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
+        require(IERC20(tokenTakenOut).transfer(to, amounts[amounts.length - 1]));
     }
     function swapTokensForExactTokens(
         uint amountOut,

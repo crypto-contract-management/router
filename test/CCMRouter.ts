@@ -6,7 +6,7 @@ import * as eths from "ethers";
 import { formatEther } from "ethers/lib/utils";
 import { ethers, upgrades } from "hardhat";
 
-import { PancakeFactory, PancakeFactory__factory, PancakePair, PancakePair__factory, PancakeRouter, PancakeRouterV2, PancakeRouterV2__factory, PancakeRouter__factory, CCMRouter, CCMRouter__factory, TestContract, MyWBNB, MyWBNB__factory, TCInBetweenSecond, TCInBetweenFirst, TCStackingSellTax } from "../typechain-types";
+import { PancakeFactory, PancakeFactory__factory, PancakePair, PancakePair__factory, PancakeRouter, PancakeRouterV2, PancakeRouterV2__factory, PancakeRouter__factory, CCMRouter, CCMRouter__factory, TestContract, MyWBNB, MyWBNB__factory, TCInBetweenSecond, TCInBetweenFirst, TCStackingSellTax, TCFixedTaxes } from "../typechain-types";
 const { parseEther } = ethers.utils;
 
 // Anything below 10 difference is sufficiently equal enough (rounding errors).
@@ -17,8 +17,9 @@ describe("CCM", () => {
     let owner: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
+    let routerByAlice: CCMRouter;
+    let routerByBob: CCMRouter;
     let clarice: SignerWithAddress;
-    let pairContract: PancakePair;
     let factoryContract: PancakeFactory;
     let pcsRouterContract: PancakeRouter;
     let routerContract: CCMRouter;
@@ -38,10 +39,11 @@ describe("CCM", () => {
         [owner, alice, bob, clarice] = await ethers.getSigners();
 
         factoryContract = await factoryFactory.deploy(owner.address);
-        pairContract = await pairFactory.deploy();
         MyWBNBContract = await (await ethers.getContractFactory("MyWBNB")).deploy();
         pcsRouterContract = await pcsRouterFactory.deploy(factoryContract.address, MyWBNBContract.address, {gasLimit: 20_000_000});
         routerContract = (await upgrades.deployProxy(routerFactory, [pcsRouterContract.address, MyWBNBContract.address], { kind: "uups"})) as CCMRouter;
+        routerByAlice = await routerContract.connect(alice);
+        routerByBob = await routerContract.connect(bob);
     });
 
     describe("Factory", () => {
@@ -61,7 +63,6 @@ describe("CCM", () => {
             expect(await createdPair.factory()).eq(factoryContract.address);
         });
     });
-    
     let testMyWBNBPair: PancakePair;
     describe("Contract interactions", async() => {
         let routerByAlice: CCMRouter;
@@ -344,8 +345,6 @@ describe("CCM", () => {
     });
     
     describe("Test in-between token tax transfers (WETH taxes)", async() => {
-        let routerByAlice: CCMRouter;
-        let routerByBob: CCMRouter;
         let testContract: TCInBetweenFirst;
         let testContract2: TCInBetweenSecond;
         beforeEach(async() => {
@@ -538,7 +537,52 @@ describe("CCM", () => {
             );
             // The claimable taxes should now reset to 0.
             expect(claimableWethTax).to.eq(parseEther("0"));
-        })
+        });
+        it("TCF=WETH=WETH2=TCF2", async() => {
+            const [firstContract, secondContract] = await createContractAndPair(
+                "TCFixedTaxes", [routerContract.address], "MyWBNB", [], false);
+            const [thirdContract, fourthContract] = await createContractAndPair(
+                "TCFixedTaxes", [routerContract.address], "MyWBNB", [], false);
+            const firstSecondAddress = await createPair(firstContract, secondContract);
+            const secondThirdAddress = await createPair(secondContract, thirdContract);
+            const thirdfourthAddress = await createPair(thirdContract, fourthContract);
+            (await firstContract as TCFixedTaxes).setIsPair(firstSecondAddress, 1);
+            (await thirdContract as TCFixedTaxes).setIsPair(thirdfourthAddress, 1);
+            // TCF takes 5% buy and 15% sell tax.
+            // Therefore if we sell 10 ETH worth of TCF we take 15% sell at first place.
+            // For the remaining 8.5 ETH left we take another 5% buy fee.
+            // 1. TCF tax: 8.5 ETH
+            // 2. TCF2 tax: 0.425 ETH
+            const tcfTaxBeforeSwap = await routerContract.tokenTaxesClaimable(
+                firstContract.address, secondContract.address);
+            const tcf2TaxBeforeSwap = await routerContract.tokenTaxesClaimable(
+                thirdContract.address, fourthContract.address);
+            // Alice swaps the 10 ETH worth of TCF.
+            const tokensNeeded = (await pcsRouterContract.getAmountsIn(
+                parseEther("10"), [firstContract.address, secondContract.address]
+            ))[1];
+            await routerByAlice.swapExactTokensForTokens(
+                tokensNeeded, 0,
+                [
+                    firstContract.address, 
+                    secondContract.address,
+                    thirdContract.address,
+                    fourthContract.address
+                ],
+                alice.address,
+                await getTime()
+            );
+            const tcfTaxAfterSwap = await routerContract.tokenTaxesClaimable(
+                firstContract.address, secondContract.address);
+            const tcf2TaxAfterSwap = await routerContract.tokenTaxesClaimable(
+                thirdContract.address, fourthContract.address);
+            const tcfTaxGained = tcfTaxAfterSwap.sub(tcfTaxBeforeSwap);
+            const tcf2TaxGained = tcf2TaxAfterSwap.sub(tcf2TaxBeforeSwap);
+            const tcfTaxGainedExpected = parseEther("1.5");
+            const tcfTax2GainedExpected = parseEther("0.425");
+            expect(tcfTaxGained).to.eq(tcfTaxGainedExpected);
+            expect(tcf2TaxGained).to.eq(tcfTax2GainedExpected);
+        });
     });
     
     describe("Test tax tier levels", async() => {
@@ -767,8 +811,7 @@ describe("CCM", () => {
         it("Only owner", async() => {
             await expect(routerByAlice.setTaxTierLevel(testContract.address, 30)).to.be.revertedWith("Ownable: caller is not the owner");
         });
-    });
-  
+    }); 
     describe("Update contract to V2 and check if logic applied", async() => {
         let routerByAlice: CCMRouter;
         let routerByBob: CCMRouter;
@@ -1023,6 +1066,59 @@ describe("CCM", () => {
             await expect(routerByAlice.withdrawRouterTaxes(ethAddress)).to.be.revertedWith("Ownable: caller is not the owner");
         });
     });
+    
+    // Contract creations
+    const createContractAndPair = async(
+        firstContractName: string, firstContractParams: Array<any>,
+        secondContractName: string, secondContractParams: Array<any>,
+        isFirstContractTaxable: boolean) => {
+            // Prepare contract.
+            console.log(firstContractName, firstContractParams[0]);
+            const firstContract = await (
+                await ethers.getContractFactory(firstContractName)
+            ).deploy(...firstContractParams);
+            const secondContract = await (
+                await ethers.getContractFactory(secondContractName)
+            ).deploy(...secondContractParams);
+            // Transfer some tokens.
+            firstContract.transfer(alice.address, parseEther("1000"));
+            firstContract.transfer(bob.address, parseEther("1000"));
+            secondContract.transfer(alice.address, parseEther("1000"));
+            secondContract.transfer(bob.address, parseEther("1000"));
+            // Prepare alice.
+            (await (await firstContract.connect(alice)).approve(routerByAlice.address, ethers.constants.MaxUint256));
+            (await (await firstContract.connect(bob)).approve(routerByBob.address, ethers.constants.MaxUint256));
+            (await (await secondContract.connect(alice)).approve(routerByAlice.address, ethers.constants.MaxUint256));
+            (await (await secondContract.connect(bob)).approve(routerByBob.address, ethers.constants.MaxUint256));
+            // Activate taxes
+            if(isFirstContractTaxable){
+                await routerContract.claimInitialFeeOwnership(secondContract.address);
+                await routerContract.chooseTaxTierLevel(secondContract.address);
+            } else {
+                await routerContract.claimInitialFeeOwnership(firstContract.address);
+                await routerContract.chooseTaxTierLevel(firstContract.address);
+            }
+
+            return [firstContract, secondContract];
+        }
+    
+    const createPair = async(firstContract: eths.Contract, secondContract: eths.Contract) => {
+        // Create pair.
+        const pairAddress = (await factoryContract.callStatic.createPair(firstContract.address, secondContract.address));
+        // Provide liquidity.
+        await firstContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
+        await secondContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
+        await pcsRouterContract.addLiquidity(
+            firstContract.address,
+            secondContract.address,
+            parseEther("100"), parseEther("100"),
+            parseEther("100"), parseEther("100"),
+            owner.address, (await time.latest()) + 300
+        );
+
+        return pairAddress;
+    }
+    const getTime = async() => (await time.latest()) + 300;
 })
 
 // Utilities
