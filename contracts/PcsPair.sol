@@ -1,5 +1,6 @@
 pragma solidity ^0.8.9;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -361,6 +362,7 @@ contract PancakePair is IPancakePair, PancakeERC20 {
         { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
         uint balance0Adjusted = (balance0.mul(10000).sub(amount0In.mul(25)));
         uint balance1Adjusted = (balance1.mul(10000).sub(amount1In.mul(25)));
+        
         require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Pancake: K');
         }
 

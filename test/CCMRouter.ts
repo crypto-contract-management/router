@@ -41,7 +41,7 @@ describe("CCM", () => {
         factoryContract = await factoryFactory.deploy(owner.address);
         MyWBNBContract = await (await ethers.getContractFactory("MyWBNB")).deploy();
         pcsRouterContract = await pcsRouterFactory.deploy(factoryContract.address, MyWBNBContract.address, {gasLimit: 20_000_000});
-        routerContract = (await upgrades.deployProxy(routerFactory, [pcsRouterContract.address, MyWBNBContract.address], { kind: "uups"})) as CCMRouter;
+        routerContract = (await upgrades.deployProxy(routerFactory, [pcsRouterContract.address, factoryContract.address, MyWBNBContract.address], { kind: "uups"})) as CCMRouter;
         routerByAlice = await routerContract.connect(alice);
         routerByBob = await routerContract.connect(bob);
     });
@@ -272,7 +272,7 @@ describe("CCM", () => {
             
             // Alice tries to swap some tokens
             const aliceTCBeforeBuy = await testContract.balanceOf(alice.address);
-            const contractBalanceBefore = await testContract.provider.getBalance(testContract.address);
+            const contractBalanceBefore = await MyWBNBContract.balanceOf(testContract.address);
             // Buy 3 times => 3 times 6% fee to pay.
             let expectedTCToGet = (await pcsRouterContract.getAmountsOut(parseEther("0.94"), [MyWBNBContract.address, testContract.address]))[1];
             await routerByAlice.swapExactETHForTokens(
@@ -280,8 +280,8 @@ describe("CCM", () => {
                 alice.address,  (await time.latest()) + 30, 
                 {value: parseEther("1")}
             );
-            const tokensForThisTrade = (await pcsRouterContract.getAmountsOut(parseEther("0.94"), [MyWBNBContract.address, testContract.address]))[1]
-            expectedTCToGet = expectedTCToGet.add(tokensForThisTrade);
+            const tokensForThisTrade = (await pcsRouterContract.getAmountsOut(parseEther("1"), [MyWBNBContract.address, testContract.address]))[1]
+            expectedTCToGet = expectedTCToGet.add((await pcsRouterContract.getAmountsOut(parseEther("0.94"), [MyWBNBContract.address, testContract.address]))[1]);
             await routerByAlice.swapETHForExactTokens(
                 tokensForThisTrade, [MyWBNBContract.address, testContract.address], 
                 alice.address,  (await time.latest()) + 30, 
@@ -295,6 +295,7 @@ describe("CCM", () => {
             );
             const aliceTCGained = (await testContract.balanceOf(alice.address)).sub(aliceTCBeforeBuy);
             expect(aliceTCGained).to.be.eq(expectedTCToGet);
+
             // Sell the earned amount twice for 15% token tax, 1% tax tier level => 16% tax each.
             const tcToSell = aliceTCGained.div(2);
             const aliceWbnbBeforeSell = await alice.getBalance();
@@ -337,10 +338,10 @@ describe("CCM", () => {
             const ownerTxnCost = ownerTxn.gasUsed.mul(ownerTxn.effectiveGasPrice);
             numEq(ownerEthGained, ownerExpectedEthToGet.sub(ownerTxnCost));
             // The contract should have earned both buy and sell taxes.
-            const sellTaxesEarnedByContract = expectedWBNBToGet.mul(15).div(100);
-            const contractEthGained = (await testContract.provider.getBalance(testContract.address))
+            const sellTaxesEarnedByContract = parseEther("0.15").add(expectedWBNBToGet.mul(15).div(100));
+            const contractEthGained = (await MyWBNBContract.balanceOf(testContract.address))
                 .sub(contractBalanceBefore);
-            expect(contractEthGained).to.be.eq(parseEther("0.15").add(sellTaxesEarnedByContract));
+            expect(contractEthGained).to.be.eq(sellTaxesEarnedByContract);
         });
     });
     
@@ -555,6 +556,13 @@ describe("CCM", () => {
             const tokensNeeded = (await pcsRouterContract.getAmountsIn(
                 parseEther("10"), [firstContract.address, secondContract.address]
             ))[0];
+            console.log("TCF: ", firstContract.address);
+            console.log("WETH: ", secondContract.address);
+            console.log("WETH2: ", fourthContract.address);
+            console.log("TCF2: ", thirdContract.address);
+            console.log("First pair: ", firstSecondAddress);
+            console.log("Second pair: ", secondThirdAddress);
+            console.log("Third pair: ", thirdFourthAddress);
             const result = await routerByAlice.callStatic.swapExactTokensForTokens(
                 tokensNeeded, 0,
                 [

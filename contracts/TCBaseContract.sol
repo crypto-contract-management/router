@@ -56,7 +56,7 @@ abstract contract TCBaseContract is ERC20, ITaxToken {
         // If a pair is part of a token transfer the sender or taget has to be the router.
         // That ensures we're always able to take fees on the router.
         if(isExcluded[from] == 0 && isExcluded[to] == 0){
-            require(isPair[from] == 0 && isPair[to] == 0, "TCP: Router required");
+            //require(isPair[from] == 0 && isPair[to] == 0, "TCP: Router required");
         }
         emit TokenTransfer(from, to, amount);
     }

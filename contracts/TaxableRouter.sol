@@ -243,7 +243,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function takeBuyTax(
         address token, address taxableToken, 
         uint amount
-    ) internal taxActive(token) returns(uint amountLeft) {
+    ) internal taxActive(token) returns(uint amountLeft, uint tokenTax) {
         // First ask the token how many taxes it wants to take.
         (uint tokenTaxToTake, bool claimAfter) = ITaxToken(token).takeTax(
             taxableToken, msg.sender, true, amount
@@ -251,12 +251,11 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
         uint tokenTaxes = tokenTaxesClaimable[token][taxableToken] + tokenTaxToTake;
         tokenTaxesClaimable[token][taxableToken] = tokenTaxes;
-        if(claimAfter && tokenTaxes > 0)
-            _claimTaxes(token, taxableToken, tokenTaxes);
         
         // We take fees based upon your tax tier level,
         uint routerTaxToTake = takeRouterTax(token, taxableToken, amount);
         amountLeft = amount - tokenTaxToTake - routerTaxToTake;
+        tokenTax = tokenTaxToTake;
     }
     /// @notice Takes sell taxes when someone sells YOUR token.
     /// @notice For us for example it would be the path: CCMT => WETH.
@@ -267,7 +266,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function takeSellTax(
         address token, address taxableToken, 
         uint amount
-    ) internal taxActive(token) returns(uint amountLeft)  {
+    ) internal taxActive(token) returns(uint amountLeft, uint tokenTax)  {
         // First ask the token how many taxes it wants to take.
         (uint tokenTaxToTake, bool claimAfter) = ITaxToken(token).takeTax(
             taxableToken, msg.sender, false, amount
@@ -275,9 +274,9 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
         uint tokenTaxes = tokenTaxesClaimable[token][taxableToken] + tokenTaxToTake;
         tokenTaxesClaimable[token][taxableToken] = tokenTaxes;
-        if(claimAfter && tokenTaxes > 0)
-            _claimTaxes(token, taxableToken, tokenTaxes);
+        
         uint routerTaxToTake = takeRouterTax(token, taxableToken, amount);
         amountLeft = amount - tokenTaxToTake - routerTaxToTake;
+        tokenTax = tokenTaxToTake;
     }
 }

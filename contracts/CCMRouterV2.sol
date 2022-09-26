@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "./IPancakeRouter.sol";
-import "./IPancakePair.sol";
+import "./PcsPair.sol";
 import "./TaxableRouter.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
@@ -29,14 +29,16 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
     using SafeMath for uint;
 
     address public pcsRouter;
+    address public pcsFactory;
     address public WETH;
     // List of taxable tokens.
     // For now: WETH.
     mapping(address => bool) public taxableToken;
 
-    function initialize(address _pcsRouter, address _weth) initializer public {
+    function initialize(address _pcsRouter, address _pcsFactory, address _weth) initializer public {
         TaxableRouter.initialize();
         pcsRouter = _pcsRouter;
+        pcsFactory = _pcsFactory;
         WETH = _weth;
         setTaxableToken(_weth, true);
     }
@@ -51,10 +53,103 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
             taxableToken[token] = true;
             IERC20(token).approve(pcsRouter, ~uint(0));
         } else {
-            taxableToken[token] = false;
-            IERC20(token).approve(pcsRouter, 0);
+            taxableToken[token] = true;
+            IERC20(token).approve(pcsRouter, uint(0));
+        }
+        
+    }
+
+/*
+TCF => WETH => TCF2 => WETH2 => TCF3;
+TCF => TCF2 => WETH => TCF3;
+WETH => TCF => WETH;
+WETH => WETH2 => TCF;
+TCF => WETH => WETH2;
+TCF => WETH => WETH2 => WETH3 => TCF2 => WETH4;
+WETH => TCF => TCF2 => TCF3 => WETH2;
+WETH => WETH2 => WETH3;
+
+uint lastTaxAt = 0;
+uint lastTaxAtValid = taxable[0] && !taxable[1];
+for(uint i = 1; i < path.length; ++i)
+    if taxable(i):
+        if !taxable(i-1):
+            if !taxable(lastTaxAt+1) && lastTaxAtValid:
+                take buy fees;
+            swap(path[lastTaxAt:i+1]);
+            take sell fees;
+        lastTaxAt = i;
+        lastTaxAtValid = true;
+
+if lastTaxAt != path.length - 1:
+    if lastTaxAtValid    
+        take buy fees;
+    swap(path[lastTaxAt:])
+*/
+    function sortTokens(address a, address b) private pure returns(address token0, address token1) {
+        (token0, token1) = a < b ? (a, b) : (b, a);
+    }
+    // calculates the CREATE2 address for a pair without making any external calls
+    function pairFor(address factory, address tokenA, address tokenB) private pure returns (address pair) {
+        (address token0, address token1) = sortTokens(tokenA, tokenB);
+        pair = address(uint160(uint(keccak256(abi.encodePacked(
+                hex'ff',
+                factory,
+                keccak256(abi.encodePacked(token0, token1)),
+                keccak256(type(PancakePair).creationCode) // init code hash
+            )))));
+    }
+/*
+    function _swap(uint[] memory amounts, address[] memory path, address _to) internal virtual {
+        for (uint i; i < path.length - 1; i++) {
+            (address input, address output) = (path[i], path[i + 1]);
+            (address token0,) = sortTokens(input, output);
+            uint amountOut = amounts[i + 1];
+            (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
+            address to = i < path.length - 2 ? pairFor(pcsFactory, output, path[i + 2]) : _to;
+            console.log("%s => %s", input, output);
+            console.log("Pair is: %s", pairFor(pcsFactory, input, output));
+            IPancakePair(pairFor(pcsFactory, input, output)).swap(
+                amount0Out, amount1Out, to, new bytes(0)
+            );
         }
     }
+*/
+    struct SwapInfo {
+        uint totalSwapAmount;
+        uint taxAmountToKeep;
+    }
+
+    // path:     CCMT             => WETH             => USDT             => SHIB
+    // pairs:    CCMT/WETH        => WETH/USDT        => USDT/SHIB
+    // taxInfos: (take x weth, .) => (take x USDT, .) => (take x SHIB, .)
+
+    function _swap(address[] calldata path, SwapInfo[] memory taxInfos) private {
+        for (uint i; i < path.length - 1; i++) {
+            (address input, address output, address outputSuccessor) = (path[i], path[i + 1], path[i + 2]);
+            (address token0,) = sortTokens(input, output);
+            uint amountOut = taxInfos[i].totalSwapAmount;
+            (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
+            uint taxAmountToKeep = taxInfos[i].taxAmountToKeep;
+            if(taxAmountToKeep > 0){
+                IPancakePair(pairFor(pcsFactory, input, output)).swap(
+                    amount0Out, amount1Out, address(this), new bytes(0)
+                );
+                IERC20(output).transfer(pairFor(pcsFactory, output, outputSuccessor), amountOut - taxAmountToKeep);
+            } else {
+                address to = i == path.length - 2 ? pairFor(pcsFactory, output, outputSuccessor) : address(this);
+                IPancakePair(pairFor(pcsFactory, input, output)).swap(
+                    amount0Out, amount1Out, to, new bytes(0)
+                );
+            }
+        }
+    }
+
+    struct TokenTax {
+        address token;
+        address taxableToken;
+        uint amount;
+    } 
 
     function swapExactTokensForTokens(
         uint amountIn,
@@ -63,54 +158,38 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
         address to,
         uint deadline
     ) public returns (uint[] memory amounts) {
-        // We have to check if WETH is within this path.
-        // If that's the case we want to (potentially) take taxes on that.
-        // If we have the following path for example: CCMT => WBNB => CAKE
-        // Then we may want to take out taxes for CCMT and in taxes for CAKE.
-        // So what we do is to split up the token path, take the taxes and continue swapping.
-        address tokenSentIn = path[0];
-        address tokenTakenOut = path[path.length - 1];
-        IERC20(tokenSentIn).transferFrom(msg.sender, address(this), amountIn);
-        for(uint i = 0; i < path.length; ++i){
-            if(taxableToken[path[i]]){
-                // Token buy fees.
-                if(i == 0) {
-                    uint tokensToSend = takeBuyTax(path[1], path[0], amountIn);
-                    IERC20(tokenSentIn).approve(pcsRouter, tokensToSend);
-                    amounts = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
-                        tokensToSend, amountOutMin, path, address(this), deadline);
-                    amounts[0] = tokensToSend;
-                }
-                // Token sell fees.
-                else if(i == path.length - 1) {
-                    IERC20(tokenSentIn).approve(pcsRouter, amountIn);
-                    amounts = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
-                        amountIn, amountOutMin, path, address(this), deadline);
-                    uint tokensToSend = takeSellTax(path[i - 1], path[i], amounts[amounts.length - 1]);
-                    amounts[amounts.length - 1] = tokensToSend;
-                }
-                // Token is somewhere in between. 
-                // Take out fees for the selling token and in fees for the buying token.
-                else {
-                    // Swap until taxable token.
-                    IERC20(tokenSentIn).approve(pcsRouter, amountIn);
-                    uint[] memory amountsSwapped = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
-                        amountIn, amountOutMin, path[:i + 1], address(this), deadline);
-                    // Take out taxes for the preceeding token and in taxes for the succeeding token.
-                    uint tokensAfterSellTaxes = takeSellTax(path[i - 1], path[i], amountsSwapped[amountsSwapped.length - 1]);
-                    uint tokensAfterBuyTaxes = takeBuyTax(path[i + 1], path[i], tokensAfterSellTaxes);
-                    amounts = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
-                        tokensAfterBuyTaxes, amountOutMin, path[i:], address(this), deadline);
-                }
-                require(IERC20(tokenTakenOut).transfer(to, amounts[amounts.length - 1]));
-                return amounts;
+        IPancakeRouter02 router = IPancakeRouter02(pcsRouter);
+        amounts = new uint[](path.length);
+        SwapInfo[] memory swapInfos = new SwapInfo[](path.length);
+        
+        IERC20(path[0]).transferFrom(msg.sender, pairFor(pcsFactory, path[0], path[1]), amountIn);
+        // Create swap infos for every pair which takes taxes by 
+        // not sending all available tokens to the pcs pairs.
+        for(uint i = 0; i < path.length - 1; ++i){
+            // path:     CCMT             => WETH             => USDT             => SHIB
+            // Buy
+            if(taxableToken[path[i + 1]] && !taxableToken[path[i + 2]]){
+                (uint amountLeft,  uint tokenTax) = takeBuyTax(path[i + 1], path[i], amountIn);
+                uint[] memory tokensOut = router.getAmountsOut((amountIn = amountLeft), path[i:i + 2]);
+                swapInfos[i] = SwapInfo(amountIn, amountIn - amountLeft);
+                amounts[i] = tokensOut[0];
+                amounts[i + 1] = amountIn = tokensOut[1];
+            }
+            // Sell
+            else if(!taxableToken[path[i]] && taxableToken[path[i + 1]]){
+                uint[] memory tokensOut = router.getAmountsOut(amountIn, path[i:i + 2]);
+                (uint amountLeft, uint tokenTax) = takeSellTax(path[i], path[i + 1], tokensOut[1]);
+                swapInfos[i] = SwapInfo(amountIn, amountIn - amountLeft);
+                amounts[i] = tokensOut[0];
+                amounts[i + 1] = amountIn = amountLeft;
+            } else {
+                uint[] memory tokensOut = router.getAmountsOut(amountIn, path[i:i + 2]);
+                swapInfos[i] = SwapInfo(amountIn, 0);
+                amounts[i] = tokensOut[0];
+                amounts[i + 1] = amountIn = tokensOut[1];
             }
         }
-        // If we reached this point there has not been any taxable token in the path.
-        // Just call the usual API.
-        IERC20(tokenSentIn).approve(pcsRouter, amountIn);
-        amounts = IPancakeRouter02(pcsRouter).swapExactTokensForTokens(
-            amountIn, amountOutMin, path, address(this), deadline);
+        _swap(path, swapInfos);
         require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
     }
     function swapTokensForExactTokens(
@@ -129,9 +208,9 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
         returns (uint[] memory amounts)
     {
         address tokenToSwap = path[1];
-        uint ethToSend = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value) - 1 ether;
+        (uint ethToTransfer, uint ethTax) = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value);
         // Swap tokens and send to this router.
-        amounts = IPancakeRouter02(pcsRouter).swapExactETHForTokens{value: ethToSend}(amountOutMin, path, address(this), deadline);
+        amounts = IPancakeRouter02(pcsRouter).swapExactETHForTokens{value: ethToTransfer}(amountOutMin, path, address(this), deadline);
         require(IERC20(tokenToSwap).transfer(to, amounts[amounts.length - 1]));
     }
     function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
@@ -151,9 +230,9 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
         IERC20(tokenToSwap).approve(pcsRouter, tokensNeeded);
         amounts = IPancakeRouter02(pcsRouter).swapTokensForExactETH(amountOut, amountInMax, path, address(this), deadline);
         // The caller does not receive 100% of the ETH gained, the fees are subtracted before.
-        uint ethToTransfer = takeSellTax(
+        (uint ethToTransfer, uint ethTax) = takeSellTax(
             tokenToSwap, TaxableRouter.ETH_ADDRESS,
-            amounts[amounts.length - 1]) - 2 ether;
+            amounts[amounts.length - 1]);
         // Now send to the caller.
         TransferHelper.safeTransferETH(to, ethToTransfer);
     }
@@ -171,9 +250,9 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
         IERC20(tokenToSwap).approve(pcsRouter, amountIn);
         amounts = IPancakeRouter02(pcsRouter).swapExactTokensForETH(amountIn, amountOutMin, path, address(this), deadline);
         // The caller does not receive 100% of the ETH gained, the fees are subtracted before.
-        uint ethToTransfer = takeSellTax(
+        (uint ethToTransfer, uint ethTax) = takeSellTax(
             tokenToSwap, TaxableRouter.ETH_ADDRESS, 
-            amounts[amounts.length - 1]) - 3 ether;
+            amounts[amounts.length - 1]);
         // Now send to the caller.
         TransferHelper.safeTransferETH(to, ethToTransfer);
     }
@@ -185,9 +264,9 @@ contract CCMRouterV2 is TaxableRouter, UUPSUpgradeable {
     {
         // We only work with taxes between direct pairs of WETH <=> Token for now.
         address tokenToSwap = path[1];
-        uint ethToSend = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value) - 4 ether;
+        (uint ethToTransfer, uint ethTax) = takeBuyTax(tokenToSwap, TaxableRouter.ETH_ADDRESS, msg.value);
         // Swap tokens and send to this router.
-        amounts = IPancakeRouter02(pcsRouter).swapETHForExactTokens{value: ethToSend}(amountOut, path, address(this), deadline);
+        amounts = IPancakeRouter02(pcsRouter).swapETHForExactTokens{value: ethToTransfer}(amountOut, path, address(this), deadline);
         require(IERC20(tokenToSwap).transfer(to, amounts[amounts.length - 1]), "Final transfer failed");
     }
 
