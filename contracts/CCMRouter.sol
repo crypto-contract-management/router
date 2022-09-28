@@ -154,7 +154,6 @@ if lastTaxAt != path.length - 1:
         
         uint amountOut = taxInfos[i].tokensToTakeOut;
         (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-        console.log("Swapping: %d", amountOut);
         IPancakePair(pairFor(pcsFactory, input, output)).swap(amount0Out, amount1Out, address(this), payload);
     }
     
@@ -197,18 +196,22 @@ if lastTaxAt != path.length - 1:
             // Buy
             if(nextIsBuy){
                 (uint amountLeft,  uint tokenTax) = takeBuyTax(path[i + 2], path[i + 1], tokensOut);
-                swapInfos[i] = SwapInfo(tokensOut, amountLeft);
                 // If we already got a sell before and now we take immediate buy taxes
                 // we have a swap of for example CCMT => WETH => SHIB.
                 // Make sure the tax infos are at their correct place for that case (+1).
-                if(isSell)
+                // Also we have to further reduce the amount to send further for the existing swap info.
+                if(isSell){
+                    swapInfos[i].tokensToSendFurther = amountLeft;
                     taxInfos[i + 1] = TaxInfo(path[i + 2], path[i + 1], tokenTax);
-                else
+                }
+                else{
+                    swapInfos[i] = SwapInfo(tokensOut, amountLeft);
                     taxInfos[i] = TaxInfo(path[i + 2], path[i + 1], tokenTax);
+                }
                 amounts[i + 1] = amountIn = amountLeft;
             }
             if(swapInfos[i].tokensToTakeOut == 0) {
-                console.log("Nope");
+                
                 swapInfos[i] = SwapInfo(tokensOut, tokensOut);
                 amounts[i + 1] = amountIn = tokensOut;
             }
@@ -216,15 +219,10 @@ if lastTaxAt != path.length - 1:
         require(amounts[amounts.length - 1] >= amountOutMin);
 
         IERC20(path[0]).transfer(pairFor(pcsFactory, path[0], path[1]), initialDeposit);
-        console.log("Deposited: %d", initialDeposit);
-        console.log("Balance: %d", IERC20(path[0]).balanceOf(address(this)));
         _swap(path, swapInfos);
-        console.log("Balance: %d", IERC20(path[0]).balanceOf(address(this)));
         // Distribute taxes.
         for(uint i = 0; i < taxInfos.length; ++i){
             TaxInfo memory si = taxInfos[i];
-            console.log("[%s] Sending %d to %s", si.taxableToken, si.tokenTaxes, si.taxReceiver);
-            console.log("Our balance: %d", IERC20(WETH).balanceOf(address(this)));
             if(si.tokenTaxes > 0 && si.taxableToken != address(0)){
                 IERC20(si.taxableToken).transfer(si.taxReceiver, si.tokenTaxes);
             }
@@ -240,7 +238,6 @@ if lastTaxAt != path.length - 1:
     ) external returns (uint[] memory amounts) {
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
         amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline);
-        console.log("Sending %d back", amounts[amounts.length - 1]);
         require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
     }
 

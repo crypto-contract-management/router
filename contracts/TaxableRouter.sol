@@ -67,7 +67,6 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => TokenBaseTax) public tokenBaseTax;
     // Save how many fees this router got so far for every taxable token.
     mapping(address => uint) public routerTaxesClaimable;
-    mapping(address => uint) public routerTaxesClaimed;
     /// @notice Makes sure only to take taxes on tax-activated tokens.
     /// @param token: Token to check if activated.
     modifier taxActive(address token) {
@@ -200,6 +199,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function withdrawRouterTaxes(address token) external onlyOwner {
         uint withdrawableTokens = routerTaxesClaimable[token];
         routerTaxesClaimable[token] = 0;
+        console.log("Claiming %d", withdrawableTokens);
         if(withdrawableTokens > 0){ 
             if(token == TaxableRouter.ETH_ADDRESS){
                 (bool success, ) = payable(owner()).call{value: withdrawableTokens}("");
@@ -249,8 +249,6 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             taxableToken, msg.sender, true, amount
         );
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
-        uint tokenTaxes = tokenTaxesClaimable[token][taxableToken] + tokenTaxToTake;
-        tokenTaxesClaimable[token][taxableToken] = tokenTaxes;
         
         // We take fees based upon your tax tier level,
         uint routerTaxToTake = takeRouterTax(token, taxableToken, amount);
@@ -272,8 +270,6 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             taxableToken, msg.sender, false, amount
         );
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
-        uint tokenTaxes = tokenTaxesClaimable[token][taxableToken] + tokenTaxToTake;
-        tokenTaxesClaimable[token][taxableToken] = tokenTaxes;
         
         uint routerTaxToTake = takeRouterTax(token, taxableToken, amount);
         amountLeft = amount - tokenTaxToTake - routerTaxToTake;
