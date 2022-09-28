@@ -225,6 +225,7 @@ if lastTaxAt != path.length - 1:
             TaxInfo memory si = taxInfos[i];
             if(si.tokenTaxes > 0 && si.taxableToken != address(0)){
                 IERC20(si.taxableToken).transfer(si.taxReceiver, si.tokenTaxes);
+                ITaxToken(si.taxReceiver).onTaxClaimed(si.taxableToken, si.tokenTaxes);
             }
         }
     }

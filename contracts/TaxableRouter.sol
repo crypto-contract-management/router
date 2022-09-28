@@ -32,8 +32,7 @@ interface ITaxToken {
     /// @param isBuy True if `from` bought your token (they sold WETH for example). False if it is a sell.
     /// @param amount The amount bought or sold.
     /// @return taxToTake The tax we should take. Must be lower than or equal to `amount`.
-    /// @return claimAfter Indicates whether to directly claim all taxes after processing this request. Tremendously helpful for stuff such as auto liquidity.
-    function takeTax(address taxableToken, address from, bool isBuy, uint amount) external returns(uint taxToTake, bool claimAfter);
+    function takeTax(address taxableToken, address from, bool isBuy, uint amount) external returns(uint taxToTake);
 }
 
 abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeable {
@@ -245,7 +244,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint amount
     ) internal taxActive(token) returns(uint amountLeft, uint tokenTax) {
         // First ask the token how many taxes it wants to take.
-        (uint tokenTaxToTake, bool claimAfter) = ITaxToken(token).takeTax(
+        (uint tokenTaxToTake) = ITaxToken(token).takeTax(
             taxableToken, msg.sender, true, amount
         );
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
@@ -266,7 +265,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint amount
     ) internal taxActive(token) returns(uint amountLeft, uint tokenTax)  {
         // First ask the token how many taxes it wants to take.
-        (uint tokenTaxToTake, bool claimAfter) = ITaxToken(token).takeTax(
+        (uint tokenTaxToTake) = ITaxToken(token).takeTax(
             taxableToken, msg.sender, false, amount
         );
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");

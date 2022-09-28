@@ -20,7 +20,7 @@ contract TCStackingSellTax is TCBaseContract {
     function takeTax(
         address taxableToken, address from, 
         bool isBuy, uint amount
-    ) external virtual override returns(uint taxToTake, bool claimAfter){
+    ) external virtual override returns(uint taxToTake){
         // We take sell fees for continuous sells.
         // Increase sell fee by 10% each time someone sells.
         // Reset on buy.
@@ -30,7 +30,7 @@ contract TCStackingSellTax is TCBaseContract {
             sellCounter += 1;
         }
         uint feesToTake = amount * sellCounter * 10 / 100;
-        return (feesToTake, false);
+        return feesToTake;
     } 
 
 }
