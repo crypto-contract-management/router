@@ -2,8 +2,8 @@
 pragma solidity ^0.8.9;
 
 import "hardhat/console.sol";
+import "./ITaxToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
@@ -11,41 +11,7 @@ interface IOwnable {
     function owner() external view returns (address);
 }
 
-// This interface should be implemented by any token contract
-// that pairs to a taxable token (such as WETH etc.)
-// It provides methods for tax communication between us (the router) and you (your contract).
-// Basically just a bunch of callback methods.
-interface ITaxToken {
-    /// @notice Called after you claimed tokens (manually or automatically)
-    /// @dev Keep logic small. Your users (eventually) pay the gas for it.
-    /// @param taxableToken The token you've been sent (like WETH)
-    /// @param amount The amount transferred
-    function onTaxClaimed(address taxableToken, uint amount) external;
-    /// @notice Called when someone takes out (sell) or puts in (buy) the taxable token.
-    /// @notice We basically tell you the amount processed and ask you how many tokens
-    /// @notice you want to take as fees. This gives you ULTIMATE control and flexibility.
-    /// @notice You're welcome.
-    /// @dev DEVs, please kiss (look up this abbreviation).
-    /// @dev This function is called on every taxable transfer so logic should be as minimal as possible.
-    /// @param taxableToken The taxable token (like WETH)
-    /// @param from Who is selling or buying (allows wallet-specific taxes)
-    /// @param isBuy True if `from` bought your token (they sold WETH for example). False if it is a sell.
-    /// @param amount The amount bought or sold.
-    /// @return taxToTake The tax we should take. Must be lower than or equal to `amount`.
-    function takeTax(address taxableToken, address from, bool isBuy, uint amount) external returns(uint taxToTake);
-}
-
 abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeable {
-    using SafeMath for uint;
-
-    // The native blockchain token has no contract address (obviously).
-    // We re-use the dead wallet address for that purpose.
-    // We cannot use the zero address as storage can be initialized to that value.
-    address constant internal ETH_ADDRESS = 0x000000000000000000000000000000000000dEaD;
-    // Outstanding taxes a token can claim.
-    // Maps for example: CCMT => WETH => 5 ether.
-    // Then CCMT contract can claim 5 ether of WETH.
-    mapping(address => mapping(address => uint)) public tokenTaxesClaimable;
     // Wallets authorized to set fees for contracts.
     mapping(address => address) public feeOwners;
 
@@ -64,8 +30,6 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     }
     // Remembers if a token has been registered by its owner to activate taxing.
     mapping(address => TokenBaseTax) public tokenBaseTax;
-    // Save how many fees this router got so far for every taxable token.
-    mapping(address => uint) public routerTaxesClaimable;
     /// @notice Makes sure only to take taxes on tax-activated tokens.
     /// @param token: Token to check if activated.
     modifier taxActive(address token) {
@@ -139,35 +103,9 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
             // No tier level selected. Reject.
             require(false, "CCM: NO_TIER_LEVEL_SELECTED");
         }
-        routerTaxesClaimable[ETH_ADDRESS] += msg.value;
         emit ChoseTaxTierLevel(msg.sender, token);
     }
-    /// @notice Allows to claim taxes of a specific token.
-    /// @param token: Token in question to claim taxes from.
-    function claimTaxes(address token, address taxableToken) public byFeeOwner(token){
-        uint taxesToClaim = tokenTaxesClaimable[token][taxableToken];
-        _claimTaxes(token, taxableToken, taxesToClaim);
-    }
-    /// @notice Does the tax claiming.
-    /// @param token: Token in question to claim taxes from.
-    /// @param taxableToken: Token from which those taxes have actually been taken from.
-    function _claimTaxes(address token, address taxableToken, uint taxesToClaim) private nonReentrant {
-        tokenTaxesClaimable[token][taxableToken] = 0;
-        if(taxableToken == ETH_ADDRESS){
-            (bool success, ) = payable(token).call{value: taxesToClaim}("");
-            require(success);
-            // Note: Here we are not calling the contract to inform it about the received tokens.
-            // Reason is that the token already knows how many tokens it got and what the source has been.
-            // The token can check for the sender address in its fallback function to notice it's a tax claim.
-            // That way we safe gas by avoiding unnecessary calls.
-        } else {
-            require(IERC20(taxableToken).transfer(token, taxesToClaim));
-            // This one is important. We notify the contract about the claim.
-            // That way the contract can do various things such as adding liquidity
-            // ,distributing funds (marketing, development) or other.
-            ITaxToken(token).onTaxClaimed(taxableToken, taxesToClaim);
-        }
-    }
+
     event ClaimedInitialFeeOwnership(address, address);
     /// @notice Let's a token owner claim the initial fee ownership.
     /// @dev In order to make this working your token has to implement an owner() method 
@@ -194,19 +132,13 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         emit TransferedFeeOwnership(msg.sender, token, newOwner);
     }
     /// @notice Allows the router owner to get the ETH given by for example tax tier level setup.
-    /// @notice This function also ensures that the owner is NOT able to withdraw more ETH than being excessive.
-    function withdrawRouterTaxes(address token) external onlyOwner {
-        uint withdrawableTokens = routerTaxesClaimable[token];
-        routerTaxesClaimable[token] = 0;
-        console.log("Claiming %d", withdrawableTokens);
-        if(withdrawableTokens > 0){ 
-            if(token == TaxableRouter.ETH_ADDRESS){
-                (bool success, ) = payable(owner()).call{value: withdrawableTokens}("");
-                require(success);
-            } else {
-                require(IERC20(token).transfer(owner(), withdrawableTokens));
-            }
-        }
+    function withdrawETH() external onlyOwner {
+        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
+        require(success);
+    }
+    /// @notice Transfers any ERC20 token balance to the owner.
+    function withdrawAnyERC20Token(address token) external onlyOwner {
+        IERC20(token).transfer(owner(), IERC20(token).balanceOf(address(this)));
     }
     /// @notice Helper method to calculate the takes to take.
     /// @dev Actually we want to first multiply and then divide.
@@ -218,19 +150,17 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     function calculateTax(uint16 taxPercent, uint amount) private pure returns (uint tax) {
         if(taxPercent == 0) return 0;
 
-        if(amount >= ~uint(0).div(taxPercent))
-            tax = amount.div(10000).mul(taxPercent);
+        if(amount >= ~uint(0) / taxPercent)
+            tax = amount / 10000 * taxPercent;
         else
-            tax = amount.mul(taxPercent).div(10000);
+            tax = amount * taxPercent / 10000;
     }
-    /// @notice Takes the router tax for `taxableToken` defined by your token's tax level.
+    /// @notice Takes the router tax defined by your token's tax level.
     /// @param token Your token to get your token's specific router tax.
-    /// @param taxableToken The token we assign the taxes to (WETH e.g.)
     /// @param amount The total amount to take taxes from
     /// @return taxTaken The tax taken by us (the router)
-    function takeRouterTax(address token, address taxableToken, uint amount) private returns (uint taxTaken){
+    function takeRouterTax(address token, uint amount) private view returns (uint taxTaken){
         taxTaken = calculateTax(tokenBaseTax[token].tax, amount);
-        routerTaxesClaimable[taxableToken] += taxTaken;
     }
     
     /// @notice Takes buy taxes when someone buys YOUR token.
@@ -250,7 +180,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
         
         // We take fees based upon your tax tier level,
-        uint routerTaxToTake = takeRouterTax(token, taxableToken, amount);
+        uint routerTaxToTake = takeRouterTax(token, amount);
         amountLeft = amount - tokenTaxToTake - routerTaxToTake;
         tokenTax = tokenTaxToTake;
     }
@@ -270,7 +200,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         );
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
         
-        uint routerTaxToTake = takeRouterTax(token, taxableToken, amount);
+        uint routerTaxToTake = takeRouterTax(token, amount);
         amountLeft = amount - tokenTaxToTake - routerTaxToTake;
         tokenTax = tokenTaxToTake;
     }

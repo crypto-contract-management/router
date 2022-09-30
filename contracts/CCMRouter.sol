@@ -32,14 +32,19 @@ interface IWETH {
 }
 
 contract CCMRouter is TaxableRouter, UUPSUpgradeable {
-    using SafeMath for uint;
-
     address public pcsRouter;
     address public pcsFactory;
     address public WETH;
     // List of taxable tokens.
-    // For now: WETH.
     mapping(address => bool) public taxableToken;
+    // Data differing between test and live chain
+    //bytes32 constant pcsPairInitHash = hex"358508d6f346d29248ea82784d04fb74725d6221815dcd6b3a6ecb82fb39a7bd";
+    bytes32 constant pcsPairInitHash = hex"ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074"; // testnet
+
+    modifier ensure(uint deadline) {
+        require(deadline >= block.timestamp || deadline == 0);
+        _;
+    }
 
     function initialize(address _pcsRouter, address _pcsFactory, address _weth) initializer public {
         TaxableRouter.initialize();
@@ -65,44 +70,17 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         
     }
 
-/*
-TCF => WETH => TCF2 => WETH2 => TCF3;
-TCF => TCF2 => WETH => TCF3;
-WETH => TCF => WETH;
-WETH => WETH2 => TCF;
-TCF => WETH => WETH2;
-TCF => WETH => WETH2 => WETH3 => TCF2 => WETH4;
-WETH => TCF => TCF2 => TCF3 => WETH2;
-WETH => WETH2 => WETH3;
-
-uint lastTaxAt = 0;
-uint lastTaxAtValid = taxable[0] && !taxable[1];
-for(uint i = 1; i < path.length; ++i)
-    if taxable(i):
-        if !taxable(i-1):
-            if !taxable(lastTaxAt+1) && lastTaxAtValid:
-                take buy fees;
-            swap(path[lastTaxAt:i+1]);
-            take sell fees;
-        lastTaxAt = i;
-        lastTaxAtValid = true;
-
-if lastTaxAt != path.length - 1:
-    if lastTaxAtValid    
-        take buy fees;
-    swap(path[lastTaxAt:])
-*/
     function sortTokens(address a, address b) private pure returns(address token0, address token1) {
         (token0, token1) = a < b ? (a, b) : (b, a);
     }
     // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address factory, address tokenA, address tokenB) private pure returns (address pair) {
+    function pairFor(address factory, address tokenA, address tokenB) private view returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = address(uint160(uint(keccak256(abi.encodePacked(
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                keccak256(type(PancakePair).creationCode) // init code hash
+                pcsPairInitHash
             )))));
     }
 
@@ -111,9 +89,9 @@ if lastTaxAt != path.length - 1:
         (address token0,) = sortTokens(inAddress, outAddress);
         (uint reserve0, uint reserve1,) = IPancakePair(pair).getReserves();
         (uint reserveIn, uint reserveOut) = inAddress == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-        uint amountInWithFee = amountIn.mul(9975);
-        uint numerator = amountInWithFee.mul(reserveOut);
-        uint denominator = reserveIn.mul(10000).add(amountInWithFee);
+        uint amountInWithFee = amountIn * 9975;
+        uint numerator = amountInWithFee * reserveOut;
+        uint denominator = reserveIn * 10000 + amountInWithFee;
         amountOut = numerator / denominator;
     }
 
@@ -127,9 +105,12 @@ if lastTaxAt != path.length - 1:
         uint tokenTaxes;
     }
 
-    // path:     CCMT             => WETH             => USDT             => SHIB
-    // pairs:    CCMT/WETH        => WETH/USDT        => USDT/SHIB
-    // taxInfos: (take x weth, .) => (take x USDT, .) => (take x SHIB, .)
+    function getPairAddress(address token0, address token1) external view {
+        address p = pairFor(address(0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc), token0, token1);
+        console.log(token0, token1, "0xb7926c0430afb07aa7defde6da862ae0bde767bc");
+        console.log(p);
+
+    }
 
     function _swap(address[] calldata path, SwapInfo[] memory taxInfos) private {
         bytes memory payload = new bytes(0);
@@ -157,17 +138,11 @@ if lastTaxAt != path.length - 1:
         IPancakePair(pairFor(pcsFactory, input, output)).swap(amount0Out, amount1Out, address(this), payload);
     }
     
-    function _swapExactTokensForTokens(
-        uint amountIn,
-        uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
-    ) private returns (uint[] memory amounts) {
+    function _getSwapInfos(uint amountIn, address[] calldata path) private returns(
+        uint[] memory amounts, SwapInfo[] memory swapInfos, TaxInfo[] memory taxInfos) {
         amounts = new uint[](path.length);
-        uint initialDeposit = amountIn;
-        SwapInfo[] memory swapInfos = new SwapInfo[](path.length - 1);
-        TaxInfo[] memory taxInfos = new TaxInfo[](path.length - 1);
+        swapInfos = new SwapInfo[](path.length - 1);
+        taxInfos = new TaxInfo[](path.length - 1);
 
         // The first swap can be a buy and we just take taxes for that one immediately.
         if(taxableToken[path[0]] && !taxableToken[path[1]]){
@@ -175,7 +150,7 @@ if lastTaxAt != path.length - 1:
             uint tokensOut = getAmountOut(pairFor(pcsFactory, path[0], path[1]), path[0], amountLeft, path[1]);
             swapInfos[0] = SwapInfo(tokensOut, amountLeft);
             taxInfos[0] = TaxInfo(path[1], path[0], tokenTax);
-            amounts[0] = amountIn = initialDeposit = amountLeft;
+            amounts[0] = amountIn = amountLeft;
             amounts[1] = tokensOut;
         } else {
             amounts[0] = amountIn;
@@ -216,9 +191,20 @@ if lastTaxAt != path.length - 1:
                 amounts[i + 1] = amountIn = tokensOut;
             }
         }
-        require(amounts[amounts.length - 1] >= amountOutMin);
+    }
 
-        IERC20(path[0]).transfer(pairFor(pcsFactory, path[0], path[1]), initialDeposit);
+    function _swapExactTokensForTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        uint deadline
+    ) private returns (uint[] memory amounts) {
+        (uint[] memory swapAmounts, SwapInfo[] memory swapInfos, TaxInfo[] memory taxInfos) = _getSwapInfos(amountIn, path);
+        amounts = swapAmounts;
+
+        require(amounts[amounts.length - 1] >= amountOutMin, "CCM: LESS_OUT");
+        IERC20(path[0]).transfer(pairFor(pcsFactory, path[0], path[1]), amounts[0]);
         _swap(path, swapInfos);
         // Distribute taxes.
         for(uint i = 0; i < taxInfos.length; ++i){
@@ -236,7 +222,7 @@ if lastTaxAt != path.length - 1:
         address[] calldata path,
         address to,
         uint deadline
-    ) external returns (uint[] memory amounts) {
+    ) external ensure(deadline) returns (uint[] memory amounts){
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
         amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline);
         require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
@@ -248,13 +234,14 @@ if lastTaxAt != path.length - 1:
         address[] calldata path,
         address to,
         uint deadline
-    ) external returns (uint[] memory amounts) {
+    ) external ensure(deadline) returns (uint[] memory amounts) {
         require(false, "Coming soon!");
     }
     function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
         public
         virtual
         payable
+        ensure(deadline)
         returns (uint[] memory amounts)
     {
         uint amountIn = msg.value;
@@ -265,6 +252,7 @@ if lastTaxAt != path.length - 1:
     function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
         external
         virtual
+        ensure(deadline)
         returns (uint[] memory amounts)
     {
         // Transfer tokens from caller to this router and then swap these tokens via PCS.
@@ -281,6 +269,7 @@ if lastTaxAt != path.length - 1:
     function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
         public
         virtual
+        ensure(deadline)
         returns (uint[] memory amounts)
     {
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
@@ -294,6 +283,7 @@ if lastTaxAt != path.length - 1:
         external
         virtual
         payable
+        ensure(deadline)
         returns (uint[] memory amounts)
     {
         amounts = IPancakeRouter02(pcsRouter).getAmountsIn(amountOut, path);
@@ -310,49 +300,16 @@ if lastTaxAt != path.length - 1:
         address[] calldata path,
         address to,
         uint deadline
-    ) external virtual {
+    ) external ensure(deadline) virtual {
+        IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
         uint[] memory amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
         uint tokensToSend = amounts[amounts.length - 1];
         require(tokensToSend >= amountOutMin, "CCM: LESS_OUT");
         require(IERC20(path[path.length - 1]).transfer(to, tokensToSend), "Final transfer failed");
     }
-    function swapExactETHForTokensSupportingFeeOnTransferTokens(
-        uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
-    )
-        external
-        virtual
-        payable
-    {
-        address tokenToSwap = path[1];
-        uint[] memory amounts = swapExactETHForTokens(amountOutMin, path, address(this), deadline);
-        uint tokensToSend = amounts[amounts.length - 1];
-        require(tokensToSend >= amountOutMin, "CCM: LESS_OUT");
-        require(IERC20(tokenToSwap).transfer(to, tokensToSend), "Final transfer failed");
-    }
-    function swapExactTokensForETHSupportingFeeOnTransferTokens(
-        uint amountIn,
-        uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
-    )
-        external
-        virtual
-    {
-        uint[] memory amounts = swapExactTokensForETH(amountIn, amountOutMin, path, address(this), deadline);
-        uint tokensToSend = amounts[amounts.length - 1];
-        require(tokensToSend >= amountOutMin, "CCM: LESS_OUT");
-        TransferHelper.safeTransferETH(to, tokensToSend);
-    }
+
 
     function _authorizeUpgrade(address newImplementation) internal virtual override {
         require(msg.sender == owner(), "CCM: CANNOT_UPGRADE");
-    }
-
-    function withdrawAnyERC20Token(address token) external onlyOwner {
-        IERC20(token).transfer(owner(), IERC20(token).balanceOf(address(this)));
     }
 }

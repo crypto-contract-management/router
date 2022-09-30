@@ -12,7 +12,7 @@ async function main() {
   const myWbnbFactory = await hre.ethers.getContractFactory("MyWBNB") as MyWBNB__factory;
   const tokenFactory = await hre.ethers.getContractFactory("TestContract") as TestContract__factory;
   if (hre.network.name == "bsc_testnet") {
-    const pcsFactoryAddress = "0x6725F303b657a9451d8BA641348b6761A6CC7a17";
+    const pcsFactoryAddress = "0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc";
     const pcsRouterAddress = "0x9ac64cc6e4415144c455bd8e4837fea55603e5c3";
     
     myWbnb = await (await myWbnbFactory.deploy()).deployed() as MyWBNB;

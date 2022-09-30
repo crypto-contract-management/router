@@ -15,6 +15,16 @@
       "address": "0x116d9090a7a11Cb4B207777aC6F2AE989bD505A3",
       "txHash": "0x9f7c57d7d07a5ff0c019ad814f5877c9d30af1960c6e13822f40c2cbbd9e7ecf",
       "kind": "uups"
+    },
+    {
+      "address": "0x327947B4AdFC1576DE33b45ca1779EC31Dd9ddBA",
+      "txHash": "0x327facd52dce893c533520e7ad5c75ffd7cf2d2e9242dd917c3fc80910dc890d",
+      "kind": "uups"
+    },
+    {
+      "address": "0xC5779647b53eECccd9e1179b999d76BdCfaB483E",
+      "txHash": "0x7035d5d5a60d1c68a7555d54c86911ecbc5e477d483853194a71744ca070db85",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -4042,6 +4052,2652 @@
             "numberOfBytes": "32"
           },
           "t_struct(TokenBaseTax)10251_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "adf0a4517409afd516c68cc7474758583168a118ffd830cbeddd6eefcf745a1e": {
+      "address": "0x6C6385d76cfEC1CAFe79364405EdB1AcEAb9fF64",
+      "txHash": "0x239bf82c3cf34cff0bed7a37131b4850c574a8b08251dd4c48fb7f7f19e8e3fc",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)5543_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)5543_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)5543_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "bd1ae524171d98bfc3cf16d4f99e19e126a36618893eb34f8f8c39fa355c21af": {
+      "address": "0xeb7c447A8719BB86b9721e60324CAde60FD67C93",
+      "txHash": "0x5cdd7be4449d2845bc9dc83c692f236e0970ecc5d76eff385bfdf65aede46308",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11706_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11706_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11706_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "6984a673026d011e456907cd2518ab60b5077fdbdf210625bdfe598990a6b219": {
+      "address": "0xad74224eb33e929b8AdD53a2A7d022c3BCF3CdCD",
+      "txHash": "0x348079ccb36bf4f3aed7a0a5a3b1de953bae5de2c1cae5b682951d927302def1",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11710_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11710_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11710_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "ade9c7880a4ec0a8335101e6aa428515e7901e19a53b37ffae1aab1748d1a034": {
+      "address": "0x4C6d2a68c9eAB63ac9FDbE94fB76C870634AbAe8",
+      "txHash": "0xf2dd73bbbaea929ca5d58f7c9b1291ddfc64ecc3e5d9a74dd446f5f73898119a",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11691_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11691_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11691_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "913e370d82906e72b982662617f7c246502793b1df17f4428a2bd52ef3dc70ac": {
+      "address": "0x821524bEcF5fC71B854Ec39c15687DB8c9531Bba",
+      "txHash": "0x2c21ff4c338ec7a361150d6d1574957ec67eace4af01d85482fa5395349742bb",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11696_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11696_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11696_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "e317aa816b78da45ebb952d772b91a46fbf3a7b21f3804cda3e62baec200b521": {
+      "address": "0xf265398Bf901E522E29C320d0e721ac0c1C712Ab",
+      "txHash": "0xd93fcfe88631b87ca31c39f0154b6f8cbc7e3cb778c328df33c503357c84e59a",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11701_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11701_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11701_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "25bdbc8c7dd1879201ab50299194f290fd20cc2db9ebb1742ca4c898320a3934": {
+      "address": "0x017878E8f48CD56030e52E4b7DfCA8c5a252C8e8",
+      "txHash": "0x15b6028c6c28261e4954b6d8684953ae4a22a2764f43f905b5b76ac1bf7574a5",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11696_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11696_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11696_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "0b2b6e37fc8149883c140124264004da64b806a50d6dd2139b813245d6fb3b2b": {
+      "address": "0xb9Ad9CbF5494F41cA61eD852896d4F2Eb1489E8E",
+      "txHash": "0x103833009d27f2e75189fcd8de71436b3984888ca99da084813637e678617a36",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11692_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11692_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11692_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "1b63d782abace8fd5f73c0de25916eacf9e5ee56cdaf9b9060e77b7fdf9d3a71": {
+      "address": "0x2C92dB2f874F4fC5AD017DD4274a06B48Ce654F7",
+      "txHash": "0xf8fa2a72ed11dbc8ef2640ba78c7ef462219d25febcaeddb5845e4fda43bb027",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11708_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11708_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11708_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "fb1d8b514380199dff81598579bbc3096d2964eedb8ac879573203573576afa4": {
+      "address": "0x580e73179F909e9c528f3Dd1E6Ac378D3194310A",
+      "txHash": "0x0dc982432b3a28c03267d39629a2dc0bea7931fa154721ab1bd9b7a69fa4cf92",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11723_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11723_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11723_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "99b6e01786d4eb39f842c82a8315922ce9d335888dc9de1bffb8674553c71074": {
+      "address": "0xF9851979CA9A9D1822787bc97F640AEa57015A53",
+      "txHash": "0xd95ef0cc07fe63dc0110ac013c2a8c007722f802018e35c0326a9cd7f1011262",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11717_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11717_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11717_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "d471dc7452e9e75ccdcbcafbf79454fbbf0d53835b63c720039d7088315d28d2": {
+      "address": "0x1BC08663284924587d93D42Be3e5aa177D2a2208",
+      "txHash": "0x79bf9d3d260e0f5af640bbfe91cee4892b48fee4b4126db432d3fb0904476c9b",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11717_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11717_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11717_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "a3de1bbad7821deb66951e9624914c22e3a4a03479181060ab02bfe01992da44": {
+      "address": "0xd6647935f44D039719dEeF258d086fc3Bb9C7F1d",
+      "txHash": "0xfee08b701c503abe8c57e914fb23ab0e3af0e4ebd4bb889f477aacc526175d3f",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11835_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouter",
+            "src": "contracts\\CCMRouter.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11835_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11835_storage": {
+            "label": "struct TaxableRouter.TokenBaseTax",
+            "members": [
+              {
+                "label": "isActive",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tax",
+                "type": "t_uint16",
+                "offset": 1,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "ead2153ebfb04aff82286f02e73305d81b12391b88d27ab36daa0e67ff77b9bf": {
+      "address": "0x7E2818F72d9370B708eE4Bc36B9f69fA420b1e56",
+      "txHash": "0xabd229744057e15548331119ad157d9bec6f797ab5b4695c1011d7a4f776d0cb",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "label": "feeOwners",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_address,t_address)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:16"
+          },
+          {
+            "label": "tokenBaseTax",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11835_storage)",
+            "contract": "TaxableRouter",
+            "src": "contracts\\TaxableRouter.sol:32"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "pcsRouter",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:35"
+          },
+          {
+            "label": "pcsFactory",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:36"
+          },
+          {
+            "label": "WETH",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:37"
+          },
+          {
+            "label": "taxableToken",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CCMRouterV2",
+            "src": "contracts\\CCMRouterV2.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_address)": {
+            "label": "mapping(address => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(TokenBaseTax)11835_storage)": {
+            "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TokenBaseTax)11835_storage": {
             "label": "struct TaxableRouter.TokenBaseTax",
             "members": [
               {

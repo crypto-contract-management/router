@@ -58,7 +58,11 @@ describe("CCM", () => {
         it("Is correctly deployed", async() => {
             expect(await createdPair.factory()).eq(factoryContract.address);
         });
+        it("Check pair address", async() => {
+            await routerContract.getPairAddress("0xd5b863b3796dda7234de6ca43302ee81efc8dc88", "0xeb75dbc9e882b3792bd1280de37903c45d7a4f0b");
+        });
     });
+    return;
     describe("Contract interactions", async() => {
         beforeEach(async() => {
             // Prepare contract.
@@ -72,7 +76,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -153,7 +157,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             const bobsPcsRouterContract = await pcsRouterContract.connect(bob);
@@ -217,7 +221,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -244,7 +248,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -353,7 +357,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -382,7 +386,7 @@ describe("CCM", () => {
             const testContract2MyWBNBPair = (await factoryContract.callStatic.createPair(testContract2.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract2.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(testContract2MyWBNBPair);
-            await testContract2.setIsPair(testContract2MyWBNBPair, 1);
+            await testContract2.setIsTaxablePair(testContract2MyWBNBPair, true);
             // Provide liquidity.
             await testContract2.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -448,7 +452,7 @@ describe("CCM", () => {
             // Create pair.
             const tcStackingSellContractMyWBNBPair = (await factoryContract.callStatic.createPair(tcStackingSellContract.address, MyWBNBContract.address));
             await factoryContract.createPair(tcStackingSellContract.address, MyWBNBContract.address);
-            await tcStackingSellContract.setIsPair(tcStackingSellContractMyWBNBPair, 1);
+            await tcStackingSellContract.setIsTaxablePair(tcStackingSellContractMyWBNBPair, true);
             // Provide liquidity.
             await tcStackingSellContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await MyWBNBContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
@@ -529,8 +533,8 @@ describe("CCM", () => {
             const firstSecondAddress = await createPair(firstContract, secondContract);
             const secondThirdAddress = await createPair(secondContract, fourthContract);
             const thirdFourthAddress = await createPair(fourthContract, thirdContract);
-            (await firstContract as TCFixedTaxes).setIsPair(firstSecondAddress, 1);
-            (await thirdContract as TCFixedTaxes).setIsPair(thirdFourthAddress, 1);
+            (await firstContract as TCFixedTaxes).setIsTaxablePair(firstSecondAddress, true);
+            (await thirdContract as TCFixedTaxes).setIsTaxablePair(thirdFourthAddress, true);
             // Add taxable tokens.
             await routerContract.setTaxableToken(secondContract.address, true);
             await routerContract.setTaxableToken(fourthContract.address, true);
@@ -597,7 +601,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -628,11 +632,12 @@ describe("CCM", () => {
             await expect(routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("8")})).to.be.revertedWith("CCM: NO_TIER_LEVEL_SELECTED");
         })
         it("Tax tier level apprentice", async() => {
-            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("0.5")});
             // Just buy and sell as above.
             // Total of buys/sells is 100 bnb, with apprentice (0.5% tax) This makes 0.5 bnb for us/the router.
             const contractBalanceBefore = await MyWBNBContract.balanceOf(routerContract.address);
             const routerETHBefore = await routerContract.provider.getBalance(routerContract.address);
+            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("0.5")});
+
             await routerByAlice.swapExactETHForTokens(
                 0, [MyWBNBContract.address, testContract.address], 
                 alice.address,  await getTime(), 
@@ -684,15 +689,16 @@ describe("CCM", () => {
             const routerETHEarned = routerETHAfter.sub(routerETHBefore);
             // This is what the contract itself tracked it should have earned.
             // Those two have to match of course. And both need to tell 0.5 bnb.
-            const contractETHTaxReceived = await routerContract.routerTaxesClaimable(ethAddress);
             const expectedETHEarned = parseEther("0.5");
             const expectedETHTaxEarned = parseEther("0.5");
 
             expect(contractETHEarned).eq(expectedETHEarned);
-            expect(contractETHTaxReceived).eq(expectedETHTaxEarned);
+            expect(routerETHEarned).eq(expectedETHTaxEarned);
         });
         it("Tax tier level expert", async() => {
+            const routerETHBefore = await routerContract.provider.getBalance(routerContract.address);
             await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("1")});
+            const routerETHEarned = (await routerContract.provider.getBalance(routerContract.address)).sub(routerETHBefore);
             // Just buy and sell as above.
             // Total of buys/sells is 100 bnb, with apprentice (0.3% tax) This makes 0.3 bnb for us/the router.
             const contractBalanceBefore = await MyWBNBContract.balanceOf(routerContract.address);
@@ -745,12 +751,11 @@ describe("CCM", () => {
             const contractETHEarned = contractBalanceAfter.sub(contractBalanceBefore);
             // This is what the contract itself tracked it should have earned.
             // Those two have to match of course. And both need to tell 0.3 bnb.
-            const contractETHTaxReceived = await routerContract.routerTaxesClaimable(ethAddress);
             const expectedETHEarned = parseEther("0.3");
             const expectedETHTaxEarned = parseEther("1.0");
 
             expect(contractETHEarned).eq(expectedETHEarned);
-            expect(contractETHTaxReceived).eq(expectedETHTaxEarned);
+            expect(routerETHEarned).eq(expectedETHTaxEarned);
         });
     });
     describe("Set tax tier manually by owner", async() => {
@@ -769,7 +774,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -827,7 +832,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -948,7 +953,7 @@ describe("CCM", () => {
             const pairAddress = (await factoryContract.callStatic.createPair(testContract.address, MyWBNBContract.address));
             await factoryContract.createPair(testContract.address, MyWBNBContract.address);
             testMyWBNBPair = await pairFactory.attach(pairAddress);
-            await testContract.setIsPair(pairAddress, 1);
+            await testContract.setIsTaxablePair(pairAddress, true);
             // Provide liquidity.
             await testContract.approve(pcsRouterContract.address, ethers.constants.MaxUint256);
             await pcsRouterContract.addLiquidityETH(
@@ -970,12 +975,10 @@ describe("CCM", () => {
         it("Withdraw ETH that has been gathered for trades of 1% fee", async() => {
             await routerContract.chooseTaxTierLevel(testContract.address);
             
-            const aliceBefore = await testContract.balanceOf(alice.address);
             await routerByAlice.swapExactETHForTokens(
                 0, [MyWBNBContract.address, testContract.address], alice.address, await getTime(),
                 { value: parseEther("5")}
             );
-            expect((await routerContract.routerTaxesClaimable(MyWBNBContract.address))).to.deep.equal(parseEther("0.05"));
             const aliceAfterOne = await testContract.balanceOf(alice.address);
             await routerByAlice.swapExactETHForTokens(
                 0, [MyWBNBContract.address, testContract.address], alice.address, await getTime(),
@@ -1006,7 +1009,7 @@ describe("CCM", () => {
 
             // Claim router rewards
             const ownerBalanceBefore = await MyWBNBContract.balanceOf(owner.address);
-            const txn = await (await routerContract.withdrawRouterTaxes(MyWBNBContract.address)).wait();
+            const txn = await (await routerContract.withdrawAnyERC20Token(MyWBNBContract.address)).wait();
             const ownerBalanceAfter = await MyWBNBContract.balanceOf(owner.address);
 
             // 1% of 15 eth buy and two sells, also with 1%. Subtract txn costs as well.
@@ -1051,9 +1054,9 @@ describe("CCM", () => {
             // Claim router rewards
             const ownerBalanceBefore = await MyWBNBContract.balanceOf(owner.address);
             const ownerEthBefore = await owner.getBalance();
-            const txn = await (await routerContract.withdrawRouterTaxes(MyWBNBContract.address)).wait();
+            const txn = await (await routerContract.withdrawAnyERC20Token(MyWBNBContract.address)).wait();
             const txnCost = txn.effectiveGasPrice.mul(txn.gasUsed);
-            const txn2 = await (await routerContract.withdrawRouterTaxes(ethAddress)).wait();
+            const txn2 = await (await routerContract.withdrawETH()).wait();
             const txn2Cost = txn2.effectiveGasPrice.mul(txn2.gasUsed);
             const ownerBalanceAfter = await MyWBNBContract.balanceOf(owner.address);
             const ownerEthAfter = await owner.getBalance();
@@ -1066,7 +1069,7 @@ describe("CCM", () => {
             expect(ownerEthGained).to.eq(parseEther("1").sub(txnCost).sub(txn2Cost));
         });
         it("Only owner", async() => {
-            await expect(routerByAlice.withdrawRouterTaxes(ethAddress)).to.be.revertedWith("Ownable: caller is not the owner");
+            await expect(routerByAlice.withdrawAnyERC20Token(ethAddress)).to.be.revertedWith("Ownable: caller is not the owner");
         });
     });
     

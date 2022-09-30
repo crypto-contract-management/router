@@ -20,4 +20,11 @@ interface ITaxToken {
     /// @param amount The amount bought or sold.
     /// @return taxToTake The tax we should take. Must be lower than or equal to `amount`.
     function takeTax(address taxableToken, address from, bool isBuy, uint amount) external returns(uint taxToTake);
+    /// @notice Used to withdraw the token taxes.
+    /// @notice DEVs must not forget to implement such a function, otherwise funds may not be recoverable
+    /// @notice unless they send their taxes to wallets during `onTaxClaimed`.
+    /// @param token The token to withdraw.
+    /// @param to Token receiver.
+    /// @param amount The amount to withdraw.
+    function withdrawTax(address token, address to, uint amount) external;
 }

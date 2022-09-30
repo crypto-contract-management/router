@@ -6,7 +6,7 @@ async function main() {
   // CCM router
   if(hre.network.name == "bsc_testnet") {
      // Activate new proxy contract
-     const proxyAddress = "0x116d9090a7a11Cb4B207777aC6F2AE989bD505A3";
+     const proxyAddress = "0xc5779647b53eecccd9e1179b999d76bdcfab483e";
      const routerFactory = await ethers.getContractFactory("CCMRouterV2");
      await upgrades.upgradeProxy(proxyAddress, routerFactory, {kind: "uups"}) as CCMRouter;
   }

@@ -5,6 +5,7 @@
     "types": "abi-types-generator hardhat",
     "deploy:bsc_testnet": "npx hardhat run --network bsc_testnet scripts/deploy.ts",
     "deploy:bsc_testnet_token": "npx hardhat run --network bsc_testnet scripts/deploy_testtoken.ts",
+    "deploy:bsc_testnet_token_fixed_taxes": "npx hardhat run --network bsc_testnet scripts/deploy_tcfixedtaxes.ts",
     "deploy:bsc_testnet_upgrade": "npx hardhat run --network bsc_testnet scripts/deploy_upgrade.ts"
   },
   "devDependencies": {

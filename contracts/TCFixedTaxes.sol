@@ -14,7 +14,7 @@ contract TCFixedTaxes is TCBaseContract {
         bool isBuy, uint amount
     ) external virtual override returns(uint taxToTake){
         // 5% buy 15% sell fee. Owner is free.
-        if(from == owner)
+        if(from == owner())
             return 0;
         
         uint taxToTakePercent = isBuy ? 5 : 15;
@@ -23,4 +23,7 @@ contract TCFixedTaxes is TCBaseContract {
         return tax;
     } 
 
+    function withdrawTax(address token, address to, uint amount) external override {
+        IERC20(token).transfer(to, amount);
+    }
 }
