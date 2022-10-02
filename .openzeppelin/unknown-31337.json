@@ -2,11 +2,6 @@
   "manifestVersion": "3.2",
   "proxies": [
     {
-      "address": "0x59b670e9fA9D0A427751Af201D676719a970857b",
-      "txHash": "0x44b164d612b938693b067c3bb57ebe6faecd521f9ac25389bf5be91c9bc5fe1f",
-      "kind": "uups"
-    },
-    {
       "address": "0x4826533B4897376654Bb4d4AD88B7faFD0C98528",
       "txHash": "0x012a10b4cc608e6f5204e937ce7acf522d87fd08979b6afdd678b70fc6162a07",
       "kind": "uups"
@@ -209,11 +204,6 @@
     {
       "address": "0x2bdCC0de6bE1f7D2ee689a0342D76F52E8EFABa3",
       "txHash": "0xedcff7f6821afe9dd58339d4fe2017c4a253bc1080fcfa3a4a9988634a502531",
-      "kind": "uups"
-    },
-    {
-      "address": "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
-      "txHash": "0xa4a264b9acd1914cc34558fae565ef74bd985f4ee018678d79c66eaa42afe12e",
       "kind": "uups"
     },
     {
@@ -1057,16 +1047,6 @@
       "kind": "uups"
     },
     {
-      "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-      "txHash": "0x017706934dbe354589ee685e5165f20974e5617fcfb37cfaadeed58ce1d92c38",
-      "kind": "uups"
-    },
-    {
-      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-      "txHash": "0x4efb19da3ce9c1d963f692a83334947ffb896e65af4d1c2d0474f4bfdfd4c871",
-      "kind": "uups"
-    },
-    {
       "address": "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB",
       "txHash": "0x4400c7e0f9f01019735a119a7d251f49e30e6264dff77112958ea9b5ca4132ec",
       "kind": "uups"
@@ -1367,11 +1347,6 @@
       "kind": "uups"
     },
     {
-      "address": "0xf5059a5D33d5853360D16C683c16e67980206f36",
-      "txHash": "0xcc05b68bbcddb11a4bce8be485c9f9c5ecccd47c0ac85a2a3db66082f16499c1",
-      "kind": "uups"
-    },
-    {
       "address": "0x36C02dA8a0983159322a80FFE9F24b1acfF8B570",
       "txHash": "0xe44a567bc9d101998370e11604bec7f474fc9197ca03ef4df54dfd2a0212b514",
       "kind": "uups"
@@ -1602,11 +1577,6 @@
       "kind": "uups"
     },
     {
-      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-      "txHash": "0x91c8e9391b380658e519fef96c76b433ca161c078a52a8841c5c55e6f2733f6c",
-      "kind": "uups"
-    },
-    {
       "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
       "txHash": "0xf72a73540a02811b1f352deb1b06ec4a284c600dcb6cdb30a5d0589dac6e09e2",
       "kind": "uups"
@@ -1614,6 +1584,71 @@
     {
       "address": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
       "txHash": "0xac2437db90f6d203cdf772c967a53c75b1d9910275cfd7e46a8ed799054f1ec1",
+      "kind": "uups"
+    },
+    {
+      "address": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+      "txHash": "0x947d0212481bc2ef13b78a3c7a82cb589d6d121513fefd6334cc4811d9b29624",
+      "kind": "uups"
+    },
+    {
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "txHash": "0x21c20a684b44021c5813a57712546d54f1b3053c7e44cc0c635fcf8ef8d8da6b",
+      "kind": "uups"
+    },
+    {
+      "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "txHash": "0x4ea5a4f56a65d3995eb06b56742584e7d50127afe8f16baf034198e52367bf30",
+      "kind": "uups"
+    },
+    {
+      "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+      "txHash": "0x2ecf91d26493f21da1544bb5a0b77030a3c9df6655d6356a2ce315a0b28cd59f",
+      "kind": "uups"
+    },
+    {
+      "address": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+      "txHash": "0x8b966375cdbc17ed500770052e9471f6f1e5e69ceec44bd6207c4b34ac6f6554",
+      "kind": "uups"
+    },
+    {
+      "address": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
+      "txHash": "0x0a8115baf27275e8460d50a3a0223b9c405a5affec6a48d4e34e42e73156de18",
+      "kind": "uups"
+    },
+    {
+      "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+      "txHash": "0x5af79fd61d7c8502d3bcd96c7d7ff4bccbdb00b98320d1afbd58ea1761a64a67",
+      "kind": "uups"
+    },
+    {
+      "address": "0x59b670e9fA9D0A427751Af201D676719a970857b",
+      "txHash": "0x84b2c7bbd56eb180460b4a6750f310ef0e77ce5b462b5093b8abf329a6512297",
+      "kind": "uups"
+    },
+    {
+      "address": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+      "txHash": "0x9496514288da7c3a699387ddebe99fa6772431f091af81affef460ce26f3fa4e",
+      "kind": "uups"
+    },
+    {
+      "address": "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
+      "txHash": "0x57f5d2ed0376f0ae31783e1d89ff3f63b491d93fc8d8500bfa2006d97398029f",
+      "kind": "uups"
+    },
+    {
+      "address": "0x09635F643e140090A9A8Dcd712eD6285858ceBef",
+      "txHash": "0x71b0f9c8497886b379f9f1523b5eb49520d9b042f202cf0b9fa6fc53d6bd8b00",
+      "kind": "uups"
+    },
+    {
+      "address": "0xf5059a5D33d5853360D16C683c16e67980206f36",
+      "txHash": "0x00e5553ec4c8c5c924194f6f778fde53833b50c405edfbbc14e23c8ecdef4c49",
+      "kind": "uups"
+    },
+    {
+      "address": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+      "txHash": "0x1e7560d82c62d0e620e899f71fbe5f2ecef1f536e794605de88bd807e9f13974",
       "kind": "uups"
     }
   ],
@@ -3483,9 +3518,9 @@
         }
       }
     },
-    "1fcc7f7b8c303d0756e297160f389d3a9f261f12c7477658dd5fe2df1e8afb80": {
+    "ead2153ebfb04aff82286f02e73305d81b12391b88d27ab36daa0e67ff77b9bf": {
       "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-      "txHash": "0x57d06e4beb7f9c10579b3b0413de84c5f79cfc3aa8c6d0ec26e4a5ef2cfb7c0b",
+      "txHash": "0x70e954e1b921d42ba0e3c52f40bc02d0a4ff6d41f0c86717cec4fe3af140e46b",
       "layout": {
         "storage": [
           {
@@ -3557,7 +3592,7 @@
             "label": "tokenBaseTax",
             "offset": 0,
             "slot": "152",
-            "type": "t_mapping(t_address,t_struct(TokenBaseTax)11654_storage)",
+            "type": "t_mapping(t_address,t_struct(TokenBaseTax)13832_storage)",
             "contract": "TaxableRouter",
             "src": "contracts\\TaxableRouter.sol:32"
           },
@@ -3635,11 +3670,11 @@
             "label": "mapping(address => bool)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(TokenBaseTax)11654_storage)": {
+          "t_mapping(t_address,t_struct(TokenBaseTax)13832_storage)": {
             "label": "mapping(address => struct TaxableRouter.TokenBaseTax)",
             "numberOfBytes": "32"
           },
-          "t_struct(TokenBaseTax)11654_storage": {
+          "t_struct(TokenBaseTax)13832_storage": {
             "label": "struct TaxableRouter.TokenBaseTax",
             "members": [
               {
@@ -3664,6 +3699,389 @@
           "t_uint256": {
             "label": "uint256",
             "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "a212e4206db7b6f4e8bf99e8fb3f3f86f137cee89596c886af6c92841c4959d7": {
+      "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "txHash": "0xa1850c459b09593f5a7ef9f0800302b50a8e40c1d12ea82d7040df679c8f56c2",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\ERC1967\\ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_balances",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC20\\ERC20Upgradeable.sol:37"
+          },
+          {
+            "label": "_allowances",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC20\\ERC20Upgradeable.sol:39"
+          },
+          {
+            "label": "_totalSupply",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC20\\ERC20Upgradeable.sol:41"
+          },
+          {
+            "label": "_name",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_string_storage",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC20\\ERC20Upgradeable.sol:43"
+          },
+          {
+            "label": "_symbol",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_string_storage",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC20\\ERC20Upgradeable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_array(t_uint256)45_storage",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC20\\ERC20Upgradeable.sol:394"
+          },
+          {
+            "label": "isTaxablePair",
+            "offset": 0,
+            "slot": "301",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "TaxTokenBase",
+            "src": "contracts\\TaxTokenBase.sol:10"
+          },
+          {
+            "label": "isExcludedFromRouter",
+            "offset": 0,
+            "slot": "302",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "TaxTokenBase",
+            "src": "contracts\\TaxTokenBase.sol:11"
+          },
+          {
+            "label": "buyTax",
+            "offset": 0,
+            "slot": "303",
+            "type": "t_struct(TaxStats)3237_storage",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:28"
+          },
+          {
+            "label": "sellTax",
+            "offset": 0,
+            "slot": "306",
+            "type": "t_struct(TaxStats)3237_storage",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:29"
+          },
+          {
+            "label": "walletSellTaxes",
+            "offset": 0,
+            "slot": "309",
+            "type": "t_mapping(t_address,t_struct(WalletIndividualSellTax)3369_storage)",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:59"
+          },
+          {
+            "label": "taxDistribution",
+            "offset": 0,
+            "slot": "310",
+            "type": "t_struct(TaxDistribution)3438_storage",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:80"
+          },
+          {
+            "label": "increaseSellTaxThreshold",
+            "offset": 0,
+            "slot": "313",
+            "type": "t_uint256",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:107"
+          },
+          {
+            "label": "pancakePair",
+            "offset": 0,
+            "slot": "314",
+            "type": "t_address",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:128"
+          },
+          {
+            "label": "pancakeRouter",
+            "offset": 0,
+            "slot": "315",
+            "type": "t_address",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:129"
+          },
+          {
+            "label": "isBlacklisted",
+            "offset": 0,
+            "slot": "316",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:148"
+          },
+          {
+            "label": "reflectionBalance",
+            "offset": 0,
+            "slot": "317",
+            "type": "t_uint256",
+            "contract": "CryptoContractManagement",
+            "src": "contracts\\CCM.sol:168"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)45_storage": {
+            "label": "uint256[45]",
+            "numberOfBytes": "1440"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(WalletIndividualSellTax)3369_storage)": {
+            "label": "mapping(address => struct CryptoContractManagement.WalletIndividualSellTax)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(TaxDistribution)3438_storage": {
+            "label": "struct CryptoContractManagement.TaxDistribution",
+            "members": [
+              {
+                "label": "developmentWallet",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "reflectionsWallet",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "autoLiquidityWallet",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "developmentTaxPercent",
+                "type": "t_uint16",
+                "offset": 20,
+                "slot": "2"
+              },
+              {
+                "label": "reflectionsTaxPercent",
+                "type": "t_uint16",
+                "offset": 22,
+                "slot": "2"
+              },
+              {
+                "label": "autoLiquidityTaxPercent",
+                "type": "t_uint16",
+                "offset": 24,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(TaxStats)3237_storage": {
+            "label": "struct CryptoContractManagement.TaxStats",
+            "members": [
+              {
+                "label": "minTax",
+                "type": "t_uint16",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "maxTax",
+                "type": "t_uint16",
+                "offset": 2,
+                "slot": "0"
+              },
+              {
+                "label": "currentTax",
+                "type": "t_uint16",
+                "offset": 4,
+                "slot": "0"
+              },
+              {
+                "label": "resetTaxAfter",
+                "type": "t_uint32",
+                "offset": 6,
+                "slot": "0"
+              },
+              {
+                "label": "resetMaxTaxAfter",
+                "type": "t_uint32",
+                "offset": 10,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdated",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "lastPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(WalletIndividualSellTax)3369_storage": {
+            "label": "struct CryptoContractManagement.WalletIndividualSellTax",
+            "members": [
+              {
+                "label": "cummulativeSellPercent",
+                "type": "t_uint16",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "lastUpdated",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
           },
           "t_uint8": {
             "label": "uint8",

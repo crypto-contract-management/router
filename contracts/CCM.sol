@@ -15,17 +15,6 @@ interface IPancakePair {
 
 contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, OwnableUpgradeable, TaxTokenBase {
 
-
-
-    function initialize(address _router) external initializer {
-        TaxTokenBase.init(_router, "CryptoContractManagement", "CCM");
-        __Pausable_init();
-        taxDistribution.developmentWallet = msg.sender;
-
-        // We have a total of 100M tokens.
-        _mint(msg.sender, 10**8 * 1 ether);
-    }
-
     // Tax settings
     struct TaxStats {
         uint16 minTax;
@@ -36,8 +25,8 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         uint lastUpdated;
         uint lastPrice;
     }
-    TaxStats buyTax = TaxStats(30, 50, 50, 0, 0, 0, 0);
-    TaxStats sellTax = TaxStats(100, 200, 100, 2 hours, 4 hours, 0, 0);
+    TaxStats public buyTax;
+    TaxStats public sellTax;
 
     event TaxSettingsUpdated(uint16, uint16, uint16, uint32, uint32, uint, uint);
     function setTaxSettings(
@@ -67,7 +56,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         uint16 cummulativeSellPercent;
         uint lastUpdated;
     }
-    mapping(address => WalletIndividualSellTax) private walletSellTaxes;
+    mapping(address => WalletIndividualSellTax) public walletSellTaxes;
     
     event WalletSellTaxesUpdated(address, uint16, uint);
     function setWalletSellTaxes(address who, uint16 cummulativeTaxPercent, uint lastUpdated) external onlyOwner {
@@ -78,6 +67,63 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
 
         emit WalletSellTaxesUpdated(who, cummulativeTaxPercent, lastUpdated);
     }
+
+    // Three tax receivers: Development/marketing, liquidity, reflections.
+    struct TaxDistribution {
+        address developmentWallet;
+        address reflectionsWallet;
+        address autoLiquidityWallet;
+        uint16 developmentTaxPercent;
+        uint16 reflectionsTaxPercent;
+        uint16 autoLiquidityTaxPercent;
+    }
+    TaxDistribution public taxDistribution;
+
+    event TaxDistributionUpdated(address, address, address, uint16, uint16, uint16);
+    function setTaxDistribution(
+        address developmentWallet, address reflectionsWallet, address autoLiquidityWallet,
+        uint16 developmentTaxPercent, uint16 reflectionsTaxPercent, uint16 autoLiquidityTaxPercent
+    ) external onlyOwner {
+        require(
+            developmentTaxPercent + reflectionsTaxPercent + autoLiquidityTaxPercent == 1000,
+            "CCM: INVALID_TAX_DISTRIB"
+        );
+        TaxDistribution memory taxes = taxDistribution;
+        taxes.developmentWallet = developmentWallet;
+        taxes.reflectionsWallet = reflectionsWallet;
+        taxes.autoLiquidityWallet = autoLiquidityWallet;
+        taxes.developmentTaxPercent = developmentTaxPercent;
+        taxes.reflectionsTaxPercent = reflectionsTaxPercent;
+        taxes.autoLiquidityTaxPercent = autoLiquidityTaxPercent;
+        taxDistribution = taxes;
+
+        emit TaxDistributionUpdated(
+            developmentWallet, reflectionsWallet, autoLiquidityWallet, 
+            developmentTaxPercent, reflectionsTaxPercent, autoLiquidityTaxPercent
+        );
+    }
+
+    // Threshold to increase common sell taxes is 3% drop.
+    uint private increaseSellTaxThreshold;
+
+    function initialize(address _router) external initializer {
+        TaxTokenBase.init(_router, "CryptoContractManagement", "CCM");
+        __Ownable_init();
+        __Pausable_init();
+
+        buyTax = TaxStats(30, 50, 50, 0, 0, 0, 0);
+        sellTax = TaxStats(100, 200, 100, 2 hours, 4 hours, 0, 0);
+        taxDistribution = TaxDistribution(
+            address(0), address(0), address(0),
+            450, 350, 200
+        );
+        increaseSellTaxThreshold = 30;
+        taxDistribution.developmentWallet = msg.sender;
+
+        // We have a total of 100M tokens.
+        _mint(msg.sender, 10**8 * 1 ether);
+    }
+
     // Swap info
     address public pancakePair;
     address public pancakeRouter;
@@ -110,40 +156,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         isBlacklisted[who] = _isBlackListed;
 
         emit IsBlacklistedUpdated(who, _isBlackListed);
-    }
-
-    // Three tax receivers: Development/marketing, liquidity, reflections.
-    struct TaxDistribution {
-        address developmentWallet;
-        address reflectionsWallet;
-        address autoLiquidityWallet;
-        uint16 developmentTaxPercent;
-        uint16 reflectionsTaxPercent;
-        uint16 autoLiquidityTaxPercent;
-    }
-    TaxDistribution taxDistribution = TaxDistribution(
-        address(0), address(0), address(0),
-        450, 350, 200
-    );
-
-    event TaxDistributionUpdated(address, address, address, uint16, uint16, uint16);
-    function setTaxDistribution(
-        address developmentWallet, address reflectionsWallet, address autoLiquidityWallet,
-        uint16 developmentTaxPercent, uint16 reflectionsTaxPercent, uint16 autoLiquidityTaxPercent
-    ) external onlyOwner {
-        TaxDistribution memory taxes = taxDistribution;
-        taxes.developmentWallet = developmentWallet;
-        taxes.reflectionsWallet = reflectionsWallet;
-        taxes.autoLiquidityWallet = autoLiquidityWallet;
-        taxes.developmentTaxPercent = developmentTaxPercent;
-        taxes.reflectionsTaxPercent = reflectionsTaxPercent;
-        taxes.autoLiquidityTaxPercent = autoLiquidityTaxPercent;
-        taxDistribution = taxes;
-
-        emit TaxDistributionUpdated(
-            developmentWallet, reflectionsWallet, autoLiquidityWallet, 
-            developmentTaxPercent, reflectionsTaxPercent, autoLiquidityTaxPercent
-        );
     }
 
     function _handleAutoLiquidityTaxes(address liquidityPair, address taxableToken, uint taxes) private {
@@ -193,8 +205,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         // Will do that in the future, for now it shall be a static value.
         buyTaxToTake = _tokensLeftAfterTax(amountIn, buyTax.currentTax);
     }
-    // Threshold to increase common sell taxes is 3% drop.
-    uint private increaseSellTaxThreshold = 30;
     // Sell tax will increase to 20% if sell pressure is high.
     // Each sell increase will be kept for 2h, once reached the max sell tax it will stay for 4h.
     // No worries though: We put a lot of token fees right back in into the token itself, so you profit from that!

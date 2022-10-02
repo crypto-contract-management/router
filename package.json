@@ -1,6 +1,7 @@
 {
   "scripts": {
     "test": "npx hardhat test",
+    "test:CCM": "npx hardhat test test/CCM.ts",
     "compile": "npx hardhat compile",
     "types": "abi-types-generator hardhat",
     "deploy:bsc_testnet": "npx hardhat run --network bsc_testnet scripts/deploy.ts",
