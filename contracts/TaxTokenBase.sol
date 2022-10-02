@@ -3,16 +3,15 @@ pragma solidity ^0.8.9;
 
 import "hardhat/console.sol";
 import "./ITaxToken.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 abstract contract TaxTokenBase is ITaxToken, ERC20Upgradeable {
 
-    mapping(address => bool) private isTaxablePair;
+    mapping(address => bool) internal isTaxablePair;
     mapping(address => bool) public isExcludedFromRouter;
 
-  function init(address _router) internal initializer {
-    __ERC20_init("CryptoContractManagement", "CCM");
+  function init(address _router, string memory name, string memory symbol) internal initializer {
+    __ERC20_init(name, symbol);
     isExcludedFromRouter[msg.sender] = true;
     isExcludedFromRouter[_router] = true;
   }
