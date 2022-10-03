@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 abstract contract TaxTokenBase is ITaxToken, ERC20Upgradeable {
 
-    mapping(address => bool) internal isTaxablePair;
+    mapping(address => bool) public isTaxablePair;
     mapping(address => bool) public isExcludedFromRouter;
 
   function init(address _router, string memory name, string memory symbol) internal initializer {

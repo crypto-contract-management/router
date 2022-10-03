@@ -27,6 +27,34 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     }
     TaxStats public buyTax;
     TaxStats public sellTax;
+    // We also keep track of individual sells to punish wallets causing a huge drop.
+    struct WalletIndividualSellTax {
+        uint16 cummulativeSellPercent;
+        uint lastUpdated;
+    }
+    mapping(address => WalletIndividualSellTax) public walletSellTaxes;
+    // Three tax receivers: Development/marketing, liquidity, reflections.
+    struct TaxDistribution {
+        address developmentWallet;
+        address reflectionsWallet;
+        address autoLiquidityWallet;
+        uint16 developmentTaxPercent;
+        uint16 reflectionsTaxPercent;
+        uint16 autoLiquidityTaxPercent;
+    }
+    TaxDistribution public taxDistribution;
+    // Threshold to increase common sell taxes when too much tokens are sold.
+    uint16 public increaseSellTaxThreshold;
+    // Access control
+    mapping(address => bool) public isBlacklisted;
+    modifier notBacklisted(address who){
+        require(!isBlacklisted[who]);
+        _;
+    }
+    // Swap info
+    address public pancakePair;
+    address public pancakeRouter;
+    uint private reflectionBalance;
 
     event TaxSettingsUpdated(uint16, uint16, uint16, uint32, uint32, uint, uint);
     function setTaxSettings(
@@ -34,6 +62,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         uint16 minTax, uint16 maxTax, uint16 currentTax, 
         uint32 resetTaxAfter, uint32 resetMaxTaxAfter, 
         uint lastUpdated, uint lastPrice) external onlyOwner {
+        require(minTax <= currentTax && currentTax <= maxTax, "CCM: INVALID_TAX_SETTING");
         TaxStats memory existingTax = isBuy ? buyTax : sellTax;
         TaxStats memory newTax = TaxStats(
             minTax == 0 ? existingTax.minTax : minTax,
@@ -51,12 +80,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
 
         emit TaxSettingsUpdated(minTax, maxTax, currentTax, resetTaxAfter, resetMaxTaxAfter, lastUpdated, lastPrice);
     }
-    // We also keep track of individual sells to punish wallets causing a huge drop.
-    struct WalletIndividualSellTax {
-        uint16 cummulativeSellPercent;
-        uint lastUpdated;
-    }
-    mapping(address => WalletIndividualSellTax) public walletSellTaxes;
     
     event WalletSellTaxesUpdated(address, uint16, uint);
     function setWalletSellTaxes(address who, uint16 cummulativeTaxPercent, uint lastUpdated) external onlyOwner {
@@ -68,17 +91,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         emit WalletSellTaxesUpdated(who, cummulativeTaxPercent, lastUpdated);
     }
 
-    // Three tax receivers: Development/marketing, liquidity, reflections.
-    struct TaxDistribution {
-        address developmentWallet;
-        address reflectionsWallet;
-        address autoLiquidityWallet;
-        uint16 developmentTaxPercent;
-        uint16 reflectionsTaxPercent;
-        uint16 autoLiquidityTaxPercent;
-    }
-    TaxDistribution public taxDistribution;
-
     event TaxDistributionUpdated(address, address, address, uint16, uint16, uint16);
     function setTaxDistribution(
         address developmentWallet, address reflectionsWallet, address autoLiquidityWallet,
@@ -89,9 +101,13 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
             "CCM: INVALID_TAX_DISTRIB"
         );
         TaxDistribution memory taxes = taxDistribution;
-        taxes.developmentWallet = developmentWallet;
-        taxes.reflectionsWallet = reflectionsWallet;
-        taxes.autoLiquidityWallet = autoLiquidityWallet;
+        if(developmentWallet != address(0))
+            taxes.developmentWallet = developmentWallet;
+        if(reflectionsWallet != address(0))
+            taxes.reflectionsWallet = reflectionsWallet;
+        if(autoLiquidityWallet != address(0))
+            taxes.autoLiquidityWallet = autoLiquidityWallet;
+        
         taxes.developmentTaxPercent = developmentTaxPercent;
         taxes.reflectionsTaxPercent = reflectionsTaxPercent;
         taxes.autoLiquidityTaxPercent = autoLiquidityTaxPercent;
@@ -103,9 +119,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         );
     }
 
-    // Threshold to increase common sell taxes is 3% drop.
-    uint private increaseSellTaxThreshold;
-
     function initialize(address _router) external initializer {
         TaxTokenBase.init(_router, "CryptoContractManagement", "CCM");
         __Ownable_init();
@@ -114,19 +127,14 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         buyTax = TaxStats(30, 50, 50, 0, 0, 0, 0);
         sellTax = TaxStats(100, 200, 100, 2 hours, 4 hours, 0, 0);
         taxDistribution = TaxDistribution(
-            address(0), address(0), address(0),
+            msg.sender, msg.sender, address(0),
             450, 350, 200
         );
         increaseSellTaxThreshold = 30;
-        taxDistribution.developmentWallet = msg.sender;
 
         // We have a total of 100M tokens.
         _mint(msg.sender, 10**8 * 1 ether);
     }
-
-    // Swap info
-    address public pancakePair;
-    address public pancakeRouter;
 
     event PairAddressUpdated(address);
     function setPairAddress(address pair) external onlyOwner {
@@ -144,13 +152,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         emit PancakeRouterUpdated(router);
     }
 
-    // Access control
-    mapping(address => bool) isBlacklisted;
-    modifier notBacklisted(address who){
-        require(!isBlacklisted[who]);
-        _;
-    }
-
     event IsBlacklistedUpdated(address, bool);
     function setIsBlacklisted(address who, bool _isBlackListed) external onlyOwner {
         isBlacklisted[who] = _isBlackListed;
@@ -165,7 +166,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         IPancakePair(liquidityPair).sync();
     }
 
-    uint private reflectionBalance;
     function _handleReflectionsTaxes(address reflectionsWallet, uint taxes) private {
         // When the reflection balances reaches the 1eth threshold process it by the dividend tracker.
         uint currentReflectionBalance = reflectionBalance + taxes;
@@ -228,7 +228,9 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
             if(balanceDroppedInPercent >= increaseSellTaxThreshold){
                 // Decrease sell tax 4 times before reaching the max tax state.
                 uint16 taxStep = (currentSellTax.maxTax - currentSellTax.minTax) / 4;
-                currentSellTax.currentTax += taxStep;
+                // If this one sell is big enough it could force multiple tax steps.
+                uint taxStepsTaken = balanceDroppedInPercent / increaseSellTaxThreshold;
+                currentSellTax.currentTax += uint16(taxStep * taxStepsTaken);
                 // If we reached max sell tax lock it for `resetMaxTaxAfter`.
                 // We reach that by updating `lastUpdated accordingly`.
                 currentSellTax.lastUpdated = block.timestamp;
@@ -239,17 +241,17 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         // Handle user-specific selling. This is reset every 24h.
         if(block.timestamp >= currentUserSellTax.lastUpdated + 24 hours){
             currentUserSellTax.cummulativeSellPercent = uint16(balanceDroppedInPercent);
-            if(currentUserSellTax.cummulativeSellPercent > 25)
-                currentUserSellTax.cummulativeSellPercent = 25;
+            if(currentUserSellTax.cummulativeSellPercent > 30)
+                currentUserSellTax.cummulativeSellPercent = 30;
             currentUserSellTax.lastUpdated = block.timestamp;
         }
-        else if(currentUserSellTax.cummulativeSellPercent < 25){
+        else if(currentUserSellTax.cummulativeSellPercent < 30){
             currentUserSellTax.cummulativeSellPercent += uint16(balanceDroppedInPercent);
-            if(currentUserSellTax.cummulativeSellPercent > 25)
-                currentUserSellTax.cummulativeSellPercent = 25;
+            if(currentUserSellTax.cummulativeSellPercent > 30)
+                currentUserSellTax.cummulativeSellPercent = 30;
         }
         // Every user may sell enough tokens to induce a drop of 5% without any extra fees.
-        // After that they pay a maximum of 10% extra fees if they sold enough to drop the price by 25%.
+        // After that they pay a maximum of 15% extra fees if they sold enough to drop the price by 35%.
         uint16 userTaxToTake = (currentUserSellTax.cummulativeSellPercent - 5) / 2;
         // Now that we updated the (user) struct save it and calculate the necessary tax.
         walletSellTaxes[from] = currentUserSellTax;

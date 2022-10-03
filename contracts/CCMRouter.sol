@@ -38,8 +38,8 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
     // List of taxable tokens.
     mapping(address => bool) public taxableToken;
     // Data differing between test and live chain
-    //bytes32 constant pcsPairInitHash = hex"358508d6f346d29248ea82784d04fb74725d6221815dcd6b3a6ecb82fb39a7bd";
-    bytes32 constant pcsPairInitHash = hex"ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074"; // testnet
+    bytes32 constant pcsPairInitHash = hex"358508d6f346d29248ea82784d04fb74725d6221815dcd6b3a6ecb82fb39a7bd";
+    //bytes32 constant pcsPairInitHash = hex"ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074"; // testnet
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp || deadline == 0);
