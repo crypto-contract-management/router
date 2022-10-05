@@ -203,5 +203,9 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         uint routerTaxToTake = takeRouterTax(token, amount);
         amountLeft = amount - tokenTaxToTake - routerTaxToTake;
         tokenTax = tokenTaxToTake;
+        console.log("Left inner: ", amountLeft);
+        console.log("tokenTax inner: ", tokenTax);
+        console.log("amount inner: ", amount);
+        console.log("routerTaxToTake inner: ", routerTaxToTake);
     }
 }

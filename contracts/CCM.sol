@@ -192,12 +192,12 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
 
     function _tokensLeftAfterTax(uint amountIn, uint16 tax) private pure returns(uint tokensLeft) {
         // Higher precision is first mul then div. If that would cause an overflow do it the other way around.
-        bool unpreciseMode = ~uint(0) / tax > amountIn;
+        bool preciseMode = ~uint(0) / tax > amountIn;
         unchecked {
-            if(unpreciseMode)
-                tokensLeft = amountIn / 1000 * tax;
-            else
+            if(preciseMode)
                 tokensLeft = amountIn * tax / 1000;
+            else
+                tokensLeft = amountIn / 1000 * tax;
         }
     }
     function _takeBuyTax(uint amountIn) private view returns (uint buyTaxToTake) {
@@ -211,7 +211,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     function _takeSellTax(address taxableToken, address from, uint amountIn) private returns (uint sellTaxToTake) {
         TaxStats memory currentSellTax = sellTax;
         WalletIndividualSellTax memory currentUserSellTax = walletSellTaxes[from];
-        uint tokenBalance = IERC20(taxableToken).balanceOf(address(this));
+        uint tokenBalance = IERC20(taxableToken).balanceOf(pancakePair);
         // Update most recent price if never set (beginning) or balance increased (someone bought before someone sold).
         if(currentSellTax.lastPrice == 0 || tokenBalance > currentSellTax.lastPrice)
             currentSellTax.lastPrice = tokenBalance;
@@ -221,7 +221,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
             currentSellTax.currentTax = currentSellTax.minTax;
             currentSellTax.lastPrice = tokenBalance;
         } 
-        uint balanceDroppedInPercent = (currentSellTax.lastPrice - amountIn) / currentSellTax.lastPrice * 100;
+        uint balanceDroppedInPercent = amountIn  * 1000 / tokenBalance;
         // Handle common token taxes.
         if(currentSellTax.currentTax < currentSellTax.maxTax) {
             // If the balance would drop by `increaseSellTaxThreshold` we increase the tax gradually.
@@ -234,25 +234,30 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
                 // If we reached max sell tax lock it for `resetMaxTaxAfter`.
                 // We reach that by updating `lastUpdated accordingly`.
                 currentSellTax.lastUpdated = block.timestamp;
-                if(currentSellTax.currentTax == currentSellTax.maxTax)
+                if(currentSellTax.currentTax >= currentSellTax.maxTax){
+                    currentSellTax.currentTax = currentSellTax.maxTax;
                     currentSellTax.lastUpdated += (currentSellTax.resetMaxTaxAfter - currentSellTax.resetTaxAfter);
+                }
             }
+        } else if(block.timestamp >= currentSellTax.lastUpdated + currentSellTax.resetTaxAfter) {
+            currentSellTax.currentTax = currentSellTax.maxTax;
+            currentSellTax.lastUpdated = block.timestamp + (currentSellTax.resetMaxTaxAfter - currentSellTax.resetTaxAfter);
         }
         // Handle user-specific selling. This is reset every 24h.
         if(block.timestamp >= currentUserSellTax.lastUpdated + 24 hours){
             currentUserSellTax.cummulativeSellPercent = uint16(balanceDroppedInPercent);
-            if(currentUserSellTax.cummulativeSellPercent > 30)
-                currentUserSellTax.cummulativeSellPercent = 30;
+            if(currentUserSellTax.cummulativeSellPercent > 350)
+                currentUserSellTax.cummulativeSellPercent = 350;
             currentUserSellTax.lastUpdated = block.timestamp;
         }
-        else if(currentUserSellTax.cummulativeSellPercent < 30){
+        else if(currentUserSellTax.cummulativeSellPercent < 350){
             currentUserSellTax.cummulativeSellPercent += uint16(balanceDroppedInPercent);
-            if(currentUserSellTax.cummulativeSellPercent > 30)
-                currentUserSellTax.cummulativeSellPercent = 30;
+            if(currentUserSellTax.cummulativeSellPercent > 350)
+                currentUserSellTax.cummulativeSellPercent = 350;
         }
         // Every user may sell enough tokens to induce a drop of 5% without any extra fees.
         // After that they pay a maximum of 15% extra fees if they sold enough to drop the price by 35%.
-        uint16 userTaxToTake = (currentUserSellTax.cummulativeSellPercent - 5) / 2;
+        uint16 userTaxToTake = currentUserSellTax.cummulativeSellPercent > 50 ? (currentUserSellTax.cummulativeSellPercent - 50) / 2 : 0;
         // Now that we updated the (user) struct save it and calculate the necessary tax.
         walletSellTaxes[from] = currentUserSellTax;
         sellTax = currentSellTax;

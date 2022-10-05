@@ -107,8 +107,6 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
 
     function getPairAddress(address token0, address token1) external view {
         address p = pairFor(address(0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc), token0, token1);
-        console.log(token0, token1, "0xb7926c0430afb07aa7defde6da862ae0bde767bc");
-        console.log(p);
 
     }
 
@@ -135,7 +133,12 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         
         uint amountOut = taxInfos[i].tokensToTakeOut;
         (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
+        uint balanceBefore = IERC20(path[path.length - 1]).balanceOf(pairFor(pcsFactory, input, output));
         IPancakePair(pairFor(pcsFactory, input, output)).swap(amount0Out, amount1Out, address(this), payload);
+        uint balanceAfter = IERC20(path[path.length - 1]).balanceOf(pairFor(pcsFactory, input, output));
+        uint correctSub = balanceBefore - balanceAfter;
+        uint a = 156196663000000000000;
+        uint b = 15619666300000000000;
     }
     
     function _getSwapInfos(uint amountIn, address[] calldata path) private returns(
@@ -222,7 +225,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         address[] calldata path,
         address to,
         uint deadline
-    ) external ensure(deadline) returns (uint[] memory amounts){
+    ) public ensure(deadline) returns (uint[] memory amounts){
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
         amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline);
         require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
@@ -235,7 +238,9 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         address to,
         uint deadline
     ) external ensure(deadline) returns (uint[] memory amounts) {
-        require(false, "Coming soon!");
+        uint amountIn = IPancakeRouter02(pcsRouter).getAmountsIn(amountOut, path)[0];
+        require(amountIn <= amountInMax, "CCM: NEED_TO_MUCH_IN");
+        amounts = swapExactTokensForTokens(amountIn, 0, path, to, deadline);
     }
     function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
         public
