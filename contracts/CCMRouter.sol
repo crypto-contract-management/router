@@ -133,12 +133,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         
         uint amountOut = taxInfos[i].tokensToTakeOut;
         (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-        uint balanceBefore = IERC20(path[path.length - 1]).balanceOf(pairFor(pcsFactory, input, output));
         IPancakePair(pairFor(pcsFactory, input, output)).swap(amount0Out, amount1Out, address(this), payload);
-        uint balanceAfter = IERC20(path[path.length - 1]).balanceOf(pairFor(pcsFactory, input, output));
-        uint correctSub = balanceBefore - balanceAfter;
-        uint a = 156196663000000000000;
-        uint b = 15619666300000000000;
     }
     
     function _getSwapInfos(uint amountIn, address[] calldata path) private returns(

@@ -43,7 +43,7 @@ describe("CCM", () => {
         pcsRouter = await pcsRouterFactory.deploy(pcsFactory.address, MyWBNBContract.address);
         
         routerContract = (await upgrades.deployProxy(routerFactory, [pcsRouter.address, pcsFactory.address, MyWBNBContract.address], { kind: "uups"})) as CCMRouter;
-        ccmContract = (await upgrades.deployProxy(ccmFactory, [routerContract.address])) as CryptoContractManagement;
+        ccmContract = (await upgrades.deployProxy(ccmFactory, [routerContract.address, MyWBNBContract.address])) as CryptoContractManagement;
         ccmByAlice = await ccmContract.connect(alice);
         ccmByBob = await ccmContract.connect(bob);
         ccmByClarice = await ccmContract.connect(clarice);
@@ -76,8 +76,10 @@ describe("CCM", () => {
             ccmContract.upgradeTo(ethers.constants.AddressZero);
         })
         it("Deployer has 100M tokens", async() => {
-            const expectedOwnerSupply = parseEther("100000000");
-            expect(await ccmContract.totalSupply()).to.eq(expectedOwnerSupply);
+            const expectedTotalSuppy = parseEther("100000000")
+            // Wallets got some tokens upfront.
+            const expectedOwnerSupply = expectedTotalSuppy.sub(parseEther("2500"));
+            expect(await ccmContract.totalSupply()).to.eq(expectedTotalSuppy);
             expect(await ccmContract.balanceOf(owner.address)).to.eq(expectedOwnerSupply);
         });
         it("setPairAddress", async() => {
@@ -124,7 +126,7 @@ describe("CCM", () => {
             const increaseSellTaxThreshold = await ccmContract.increaseSellTaxThreshold();
             const buyTaxExpected = [30, 50, 50, 0, 0, BigNumber.from(0), BigNumber.from(0)];
             const sellTaxExpected = [100, 200, 100, 7200, 14400, BigNumber.from(0), BigNumber.from(0)];
-            const taxDistributionExpected = [owner.address, ethers.constants.AddressZero, ethers.constants.AddressZero, 450, 350, 200];
+            const taxDistributionExpected = [owner.address, owner.address, owner.address, 450, 350, 200];
             const increaseSellTaxThresholdExpected = 30;
 
             expect(buyTax).to.eql(buyTaxExpected);
@@ -337,6 +339,151 @@ describe("CCM", () => {
             expect(ownerWethSellGained).to.eq(ownerWethSellGainedExpected);
         });
     });
+    describe("Reward contract", async() => {
+        let pairAddress: string;
+        beforeEach(async() => {
+            pairAddress = await createPair(ccmContract, MyWBNBContract);
+            // Set up token economy.
+            await routerContract.claimInitialFeeOwnership(ccmContract.address);
+            await routerContract.chooseTaxTierLevel(ccmContract.address, {value: parseEther("0.5")});
+            await ccmContract.setPancakeRouter(pcsRouter.address);
+            await ccmContract.setPairAddress(pairAddress);
+            await ccmContract.setTaxDistribution(
+                ethers.constants.AddressZero, ethers.constants.AddressZero, pairAddress,
+                450, 350, 200
+            );
+            await ccmContract.setExcludedFromDividend(clarice.address, true);
+            await ccmContract.setMinTokensForDividends(parseEther("10"));
+        });
+        it("Rewards for alice and bob", async() => {
+            // We have 5% buy settings and 10-20% sell settings, depending on pressure.
+            // Also we got another 15% on top for user-specific sell taxes.
+            // Test scenario:
+            // We're buying in a total of 150 WETH and sell for 100 WETH.
+            // Alice will induce a 5% price drop so she won't pay any extra user fees.
+            // Bob will induce a 10% price drop which gives him 2.5% extra user fees.
+            // Clarice will induce a 35% price drop which will give her 10% extra user fees.
+            // The reward fees are 35% of all fees gathered.
+            // So for buying we will get 150 * 0.05 * 0.35 => 2.625 WETH
+            // For selling it depends, we will calculate it on demand.
+            const aliceEthBuy = parseEther("30");
+            const aliceEthSentToPair = aliceEthBuy.mul(945).div(1000);
+            const aliceCCMExpected = (
+                (await pcsRouter.getAmountsOut(aliceEthSentToPair, [MyWBNBContract.address, ccmContract.address]))[1]
+            );
+            await routerByAlice.swapExactETHForTokens(
+                aliceCCMExpected, [MyWBNBContract.address, ccmContract.address], 
+                alice.address, await getTime(),
+                { value: aliceEthBuy}
+            );
+
+            const bobEthBuy = parseEther("50");
+            const bobEthSentToPair = bobEthBuy.mul(945).div(1000);
+            const bobCCMExpected = (
+                (await pcsRouter.getAmountsOut(bobEthSentToPair, [MyWBNBContract.address, ccmContract.address]))[1]
+            );
+            const bobCCMBefore = await ccmContract.balanceOf(bob.address);
+            // A total of 80 ETH bought results in 1.4 ETH rewards.
+            // Since Alice is the only one holding tokens currently she gets full rewards.
+            let aliceEthBeforeReward = await alice.getBalance();
+            await routerByBob.swapExactETHForTokens(
+                bobCCMExpected, [MyWBNBContract.address, ccmContract.address], 
+                bob.address, await getTime(),
+                { value: bobEthBuy}
+            );
+            const aliceEthGained = (await alice.getBalance()).sub(aliceEthBeforeReward);
+            const bobCCMGained = (await ccmByBob.balanceOf(bob.address)).sub(bobCCMBefore);
+            expect(bobCCMGained).to.eq(bobCCMExpected);
+            expect(aliceEthGained).to.eq(parseEther("1.4").sub(1)); // Sub 1 cause of miscalculations.
+
+            const clariceWethBuy = parseEther("70");
+            const clariceWethSentToPair = clariceWethBuy.mul(945).div(1000);
+            const clariceCCMExpected = (
+                (await pcsRouter.getAmountsOut(clariceWethSentToPair, [MyWBNBContract.address, ccmContract.address]))[1]
+            );
+            const clariceCCMBefore = await ccmContract.balanceOf(clarice.address);
+            // A total of 70 ETH bought results in 1.225 ETH rewards.
+            // Alice holds 3/8 of the reward pool, bob holds 5/8.
+            // But alice entered before and therefore she deserves a higher portion.
+            aliceEthBeforeReward = await alice.getBalance();
+            const bobEthBeforeReward = await bob.getBalance();
+            await approveMyWBNBContract(MyWBNBContract, clarice, routerByClarice.address);
+            await routerByClarice.swapExactTokensForTokens(
+                clariceWethBuy, clariceCCMExpected, 
+                [MyWBNBContract.address, ccmContract.address], 
+                clarice.address, await getTime()
+            );
+            // Manually trigger processing cause of the auto tax limitation rule.
+            const aliceClaimTxn = await (await ccmByAlice.claimDividend()).wait();
+            const aliceClaimTxnCost = aliceClaimTxn.effectiveGasPrice.mul(aliceClaimTxn.gasUsed);
+            const aliceEthRewardGained = (await alice.getBalance()).sub(aliceEthBeforeReward);
+            const bobEthRewardGained = (await bob.getBalance()).sub(bobEthBeforeReward);
+            const clariceCCMGained = (await ccmByClarice.balanceOf(clarice.address)).sub(clariceCCMBefore);
+            expect(clariceCCMGained).to.eq(clariceCCMExpected);
+            expect(aliceEthRewardGained).to.eq(parseEther("0.613171346000456673").sub(aliceClaimTxnCost));
+            expect(bobEthRewardGained).to.eq(parseEther("0.611828653999543327"));
+            // We will accumulate all taxes the owner should have gotten and check it in the end.
+            const ownerWethBeforeSell = await MyWBNBContract.balanceOf(owner.address);
+            let ownerWethSellGainedExpected = parseEther("0");
+            // No we will sell.
+            // Clarice will begin to induce a 35% price drop.
+            approveCCMContract(ccmContract, clarice, routerContract.address);
+            const clariceWethToGet = (await MyWBNBContract.balanceOf(pairAddress)).mul(350).div(1000);
+            const clariceWethBefore = await MyWBNBContract.balanceOf(clarice.address);
+            await routerByClarice.swapTokensForExactTokens(
+                clariceWethToGet, ethers.constants.MaxUint256, 
+                [ccmContract.address, MyWBNBContract.address], clarice.address,
+                await getTime()
+            );
+            // Inducing a 35% price drop results in 20% common taxes from now on as well as an extra of 15% user tax => 35% total taxes.
+            // Also 0.5% router tax.
+            const clariceWethToGetExpected = clariceWethToGet.mul(645).div(1000);
+            let contractTaxesTakenForSell = clariceWethToGet.mul(350).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
+
+            const clariceWethGained = (await MyWBNBContract.balanceOf(clarice.address)).sub(clariceWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
+            expect(clariceWethGained).to.eq(clariceWethToGetExpected);
+            // Alice sells for 5% drop so she should only experience the 20% total sell force.
+            approveCCMContract(ccmContract, alice, routerContract.address);
+            const aliceWethToGet = (await MyWBNBContract.balanceOf(pairAddress)).mul(50).div(1000);
+            const aliceWethBefore = await MyWBNBContract.balanceOf(alice.address);
+            await routerByAlice.swapTokensForExactTokens(
+                aliceWethToGet, ethers.constants.MaxUint256, 
+                [ccmContract.address, MyWBNBContract.address], alice.address,
+                await getTime()
+            );
+            // Inducing a 5% price drop results in 20% common taxes and no individual taxes.
+            // Also 0.5% router tax though.
+            const aliceWethToGetExpected = aliceWethToGet.mul(795).div(1000).add(1); // Also strange.
+            contractTaxesTakenForSell = aliceWethToGet.mul(200).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
+            const aliceWethGained = (await MyWBNBContract.balanceOf(alice.address)).sub(aliceWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
+            expect(aliceWethGained).to.eq(aliceWethToGetExpected);
+            // Now we forward in time 24 hours to reset the base sell tax to 10%.
+            await time.increase(24 * 60 * 60);
+            // Now bob will sell 10% of remaining tokens.
+            // This will cause an increase of the common sell from 10% to 13% and he will pay an additional 2.5% user-specific fees.
+            approveCCMContract(ccmContract, bob, routerContract.address);
+            const bobWethToGet = (await MyWBNBContract.balanceOf(pairAddress)).mul(100).div(1000);
+            const bobWethBefore = await MyWBNBContract.balanceOf(bob.address);
+            await routerByBob.swapTokensForExactTokens(
+                bobWethToGet, ethers.constants.MaxUint256, 
+                [ccmContract.address, MyWBNBContract.address], bob.address,
+                await getTime()
+            );
+            // Inducing a 10% price drop results in 17.5% common taxes and 2.5% individual taxes.
+            // Also 0.5% router tax though. So a total of 20.5%.
+            // Due to pcs calc imprecise calculations our contract expects 19.9% taxes which is 20.4% in total.
+            const bobWethToGetExpected = bobWethToGet.mul(796).div(1000).add(1); // Also strange.
+            contractTaxesTakenForSell = bobWethToGet.mul(199).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
+            const bobWethGained = (await MyWBNBContract.balanceOf(bob.address)).sub(bobWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
+            expect(bobWethGained).to.eq(bobWethToGetExpected);
+            // Now check that the owner received the correct fees for selling as well.
+            const ownerWethSellGained = (await MyWBNBContract.balanceOf(owner.address)).sub(ownerWethBeforeSell);
+            expect(ownerWethSellGained).to.eq(ownerWethSellGainedExpected);
+        });
+    })
 
     const createPair = async(firstContract: eths.Contract, secondContract: eths.Contract) => {
         // Create pair.

@@ -1,20 +1,23 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.9;
+
+
 import "./TaxTokenBase.sol";
+import "./CCMDividendTracker.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
-interface IERC20 {
-    function balanceOf(address account) external view returns (uint256);
-    function transfer(address to, uint256 amount) external returns (bool);
-}
 
 interface IPancakePair {
     function sync() external;
 }
 
-contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, OwnableUpgradeable, TaxTokenBase {
+interface IWETH {
+    function withdraw(uint wad) external;
+}
 
+contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, OwnableUpgradeable, TaxTokenBase {
+    address public WETH;
     // Tax settings
     struct TaxStats {
         uint16 minTax;
@@ -55,6 +58,9 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     address public pancakePair;
     address public pancakeRouter;
     uint private reflectionBalance;
+    // Rewards
+    uint public gasForDividends;
+    CCMDividendTracker dividendTracker;
 
     event TaxSettingsUpdated(uint16, uint16, uint16, uint32, uint32, uint, uint);
     function setTaxSettings(
@@ -119,21 +125,42 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         );
     }
 
-    function initialize(address _router) external initializer {
+    function initialize(address _router, address weth) external initializer {
         TaxTokenBase.init(_router, "CryptoContractManagement", "CCM");
         __Ownable_init();
         __Pausable_init();
 
+        WETH = weth;
         buyTax = TaxStats(30, 50, 50, 0, 0, 0, 0);
         sellTax = TaxStats(100, 200, 100, 2 hours, 4 hours, 0, 0);
         taxDistribution = TaxDistribution(
-            msg.sender, msg.sender, address(0),
+            msg.sender, msg.sender, msg.sender,
             450, 350, 200
         );
         increaseSellTaxThreshold = 30;
 
         // We have a total of 100M tokens.
         _mint(msg.sender, 10**8 * 1 ether);
+        // Our very own bnb rewards token!
+        gasForDividends = 300000;
+        dividendTracker = new CCMDividendTracker();
+        dividendTracker.setExcludedFromDividend(owner(), true);
+        dividendTracker.setExcludedFromDividend(address(this), true);
+        dividendTracker.setExcludedFromDividend(_router, true);
+    }
+
+    function _transfer(address from, address to, uint amount) internal override whenNotPaused {
+        super._transfer(from, to, amount);
+        try dividendTracker.setBalance(from, balanceOf(from)) {} catch { }
+        try dividendTracker.setBalance(to, balanceOf(to)) {} catch { }
+        try dividendTracker.withdrawDividend() {} catch { }
+    }
+
+    event GasForDividendsUpdated(uint, uint);
+    function updateGasForDividends(uint gas) external onlyOwner {
+        uint oldGas = gasForDividends;
+        gasForDividends = gas;
+        emit GasForDividendsUpdated(oldGas, gas);
     }
 
     event PairAddressUpdated(address);
@@ -141,6 +168,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         isTaxablePair[pancakePair] = false;
         pancakePair = pair;
         isTaxablePair[pancakePair] = true;
+        dividendTracker.setExcludedFromDividend(pair, true);
 
         emit PairAddressUpdated(pair);
     }
@@ -166,12 +194,20 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         IPancakePair(liquidityPair).sync();
     }
 
-    function _handleReflectionsTaxes(address reflectionsWallet, uint taxes) private {
+    function _handleReflectionsTaxes(uint taxes) private {
         // When the reflection balances reaches the 1eth threshold process it by the dividend tracker.
         uint currentReflectionBalance = reflectionBalance + taxes;
-        if(currentReflectionBalance >= 1 ether){
-            // Send rewards to users.
+        if(currentReflectionBalance >= 1 ether && dividendTracker.totalSupply() > 0){
             reflectionBalance = 0;
+            // Get ETH for WETH.
+            IWETH(WETH).withdraw(currentReflectionBalance);
+            // Send funds to tracker.
+            (bool success,) = payable(dividendTracker).call{value: currentReflectionBalance}("");
+            require(success);
+            // Claim rewards for users.
+            try dividendTracker.processAccounts(gasForDividends) {} catch { }
+        } else {
+            reflectionBalance = currentReflectionBalance;
         }
     }
     /// @notice Called after you claimed tokens.
@@ -185,7 +221,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         uint reflectionsTaxes = amount * taxes.reflectionsTaxPercent / 1000;
         uint autoLiquidityTaxes = amount * taxes.autoLiquidityTaxPercent / 1000;
         IERC20(taxableToken).transfer(taxes.developmentWallet, developmentTaxes);
-        _handleReflectionsTaxes(taxes.reflectionsWallet, reflectionsTaxes);
+        _handleReflectionsTaxes(reflectionsTaxes);
         _handleAutoLiquidityTaxes(taxes.autoLiquidityWallet, taxableToken, autoLiquidityTaxes);
     }
 
@@ -212,6 +248,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         TaxStats memory currentSellTax = sellTax;
         WalletIndividualSellTax memory currentUserSellTax = walletSellTaxes[from];
         uint tokenBalance = IERC20(taxableToken).balanceOf(pancakePair);
+        require(tokenBalance > 0);
         // Update most recent price if never set (beginning) or balance increased (someone bought before someone sold).
         if(currentSellTax.lastPrice == 0 || tokenBalance > currentSellTax.lastPrice)
             currentSellTax.lastPrice = tokenBalance;
@@ -298,4 +335,23 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         require(msg.sender == owner(), "CCM: CANNOT_UPGRADE");
     }
 
+    // Reward token related stuff
+  function setAutoClaimAfter(uint128 _autoClaimAfter) external onlyOwner {
+    dividendTracker.setAutoClaimAfter(_autoClaimAfter);
+  }
+  function setMinTokensForDividends(uint minTokens) external onlyOwner {
+    dividendTracker.setMinTokensForDividends(minTokens);
+  }
+  function setExcludedFromDividend(address owner, bool excludeFromDividend) external onlyOwner {
+    dividendTracker.setExcludedFromDividend(owner, excludeFromDividend);
+  }
+  function claimDividend() external {
+    dividendTracker.claimDividend(msg.sender);
+  }
+  function processAccounts(uint gasAvailable) external {
+    dividendTracker.processAccounts(gasAvailable);
+  }
+
+    receive() external payable { }
+    fallback() external payable { }
 }
