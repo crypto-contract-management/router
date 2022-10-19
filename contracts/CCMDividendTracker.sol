@@ -69,7 +69,6 @@ abstract contract DividendPayingToken is ERC20, DividendPayingTokenInterface {
       withdrawnDividends[owner] += amountWithdrawn;
       emit DividendWithdrawn(owner, amountWithdrawn);
       payable(owner).transfer(amountWithdrawn);
-      console.log("Funds sent to %s: ", owner, amountWithdrawn);
     }
   }
 

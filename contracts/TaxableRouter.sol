@@ -167,15 +167,16 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice For us for example it would be the path: WETH => CCMT.
     /// @param token The token being bought (you).
     /// @param taxableToken The token to take taxes from (WETH e.g.)
+    /// @param sender The sender of the swap transaction. Probably msg.sender most of the time.
     /// @param amount The amount they put IN (WETH e.g.).
     /// @return amountLeft The amount of the given IN asset (WETH e.g.) that will actually used to buy.
     function takeBuyTax(
         address token, address taxableToken, 
-        uint amount
+        address sender, uint amount
     ) internal taxActive(token) returns(uint amountLeft, uint tokenTax) {
         // First ask the token how many taxes it wants to take.
         (uint tokenTaxToTake) = ITaxToken(token).takeTax(
-            taxableToken, msg.sender, true, amount
+            taxableToken, sender, true, amount
         );
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
         
@@ -188,15 +189,16 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice For us for example it would be the path: CCMT => WETH.
     /// @param token The token being sold (you).
     /// @param taxableToken The token to take taxes from (WETH e.g.)
+    /// @param sender The sender of the swap transaction. Probably msg.sender most of the time.
     /// @param amount The amount they want to take OUT (WETH e.g.).
     /// @return amountLeft The amount of the OUT asset (WETH e.g.) that will actually sent to the seller.
     function takeSellTax(
         address token, address taxableToken, 
-        uint amount
+        address sender, uint amount
     ) internal taxActive(token) returns(uint amountLeft, uint tokenTax)  {
         // First ask the token how many taxes it wants to take.
         (uint tokenTaxToTake) = ITaxToken(token).takeTax(
-            taxableToken, msg.sender, false, amount
+            taxableToken, sender, false, amount
         );
         require(tokenTaxToTake <= amount, "CCM: TAX_TOO_HIGH");
         

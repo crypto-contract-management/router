@@ -58,11 +58,7 @@ describe("CCM", () => {
         it("Is correctly deployed", async() => {
             expect(await createdPair.factory()).eq(factoryContract.address);
         });
-        it("Check pair address", async() => {
-            await routerContract.getPairAddress("0xd5b863b3796dda7234de6ca43302ee81efc8dc88", "0xeb75dbc9e882b3792bd1280de37903c45d7a4f0b");
-        });
     });
-    return;
     describe("Contract interactions", async() => {
         beforeEach(async() => {
             // Prepare contract.

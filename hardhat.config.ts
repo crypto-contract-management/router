@@ -2,6 +2,7 @@ import '@typechain/hardhat';
 import '@openzeppelin/hardhat-upgrades';
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-gas-reporter";
+import "hardhat-contract-sizer";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
@@ -13,7 +14,7 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1000,
+        runs: 200,
       },
     },
   },
@@ -50,6 +51,9 @@ const config: HardhatUserConfig = {
   typechain: {
     externalArtifacts: ['abis/*.json']
   },
+  contractSizer: {
+
+  }
 };
 
 export default config;

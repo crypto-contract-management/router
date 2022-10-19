@@ -38,8 +38,8 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
     // List of taxable tokens.
     mapping(address => bool) public taxableToken;
     // Data differing between test and live chain
-    bytes32 constant pcsPairInitHash = hex"358508d6f346d29248ea82784d04fb74725d6221815dcd6b3a6ecb82fb39a7bd";
-    //bytes32 constant pcsPairInitHash = hex"ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074"; // testnet
+    //bytes32 constant pcsPairInitHash = hex"3a8a968e398c9691c40a1f5833d775b822e80b01691cf647d10960571ac84af0";
+    bytes32 constant pcsPairInitHash = hex"ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074"; // testnet
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp || deadline == 0);
@@ -74,7 +74,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         (token0, token1) = a < b ? (a, b) : (b, a);
     }
     // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address factory, address tokenA, address tokenB) private view returns (address pair) {
+    function pairFor(address factory, address tokenA, address tokenB) private pure returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
         pair = address(uint160(uint(keccak256(abi.encodePacked(
                 hex'ff',
@@ -105,11 +105,6 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         uint tokenTaxes;
     }
 
-    function getPairAddress(address token0, address token1) external view {
-        address p = pairFor(address(0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc), token0, token1);
-
-    }
-
     function _swap(address[] calldata path, SwapInfo[] memory taxInfos) private {
         bytes memory payload = new bytes(0);
         uint i;
@@ -128,15 +123,15 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
             }
         }
         // Run last iteration manually and send tokens to us.
-        (address input, address output) = (path[path.length - 2], path[path.length - 1]);
-        (address token0,) = sortTokens(input, output);
+        (address inputLast, address outputLast) = (path[path.length - 2], path[path.length - 1]);
+        (address token0Last,) = sortTokens(inputLast, outputLast);
         
         uint amountOut = taxInfos[i].tokensToTakeOut;
-        (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-        IPancakePair(pairFor(pcsFactory, input, output)).swap(amount0Out, amount1Out, address(this), payload);
+        (uint amount0Last, uint amount1OutLast) = inputLast == token0Last ? (uint(0), amountOut) : (amountOut, uint(0));
+        IPancakePair(pairFor(pcsFactory, inputLast, outputLast)).swap(amount0Last, amount1OutLast, address(this), payload);
     }
     
-    function _getSwapInfos(uint amountIn, address[] calldata path) private returns(
+    function _getSwapInfos(address sender, uint amountIn, address[] calldata path) private returns(
         uint[] memory amounts, SwapInfo[] memory swapInfos, TaxInfo[] memory taxInfos) {
         amounts = new uint[](path.length);
         swapInfos = new SwapInfo[](path.length - 1);
@@ -144,7 +139,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
 
         // The first swap can be a buy and we just take taxes for that one immediately.
         if(taxableToken[path[0]] && !taxableToken[path[1]]){
-            (uint amountLeft,  uint tokenTax) = takeBuyTax(path[1], path[0], amountIn);
+            (uint amountLeft,  uint tokenTax) = takeBuyTax(path[1], path[0], sender, amountIn);
             uint tokensOut = getAmountOut(pairFor(pcsFactory, path[0], path[1]), path[0], amountLeft, path[1]);
             swapInfos[0] = SwapInfo(tokensOut, amountLeft);
             taxInfos[0] = TaxInfo(path[1], path[0], tokenTax);
@@ -161,14 +156,14 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
             bool nextIsBuy = taxableToken[path[i + 1]] && i < path.length - 2 && !taxableToken[path[i + 2]];
             // Sell
             if(isSell){
-                (uint amountLeft, uint tokenTax) = takeSellTax(path[i], path[i + 1], tokensOut);
+                (uint amountLeft, uint tokenTax) = takeSellTax(path[i], path[i + 1], sender, tokensOut);
                 swapInfos[i] = SwapInfo(tokensOut, amountLeft);
                 taxInfos[i] = TaxInfo(path[i], path[i + 1], tokenTax);
                 amounts[i + 1] = amountIn = tokensOut = amountLeft;
             }
             // Buy
             if(nextIsBuy){
-                (uint amountLeft,  uint tokenTax) = takeBuyTax(path[i + 2], path[i + 1], tokensOut);
+                (uint amountLeft,  uint tokenTax) = takeBuyTax(path[i + 2], path[i + 1], sender, tokensOut);
                 // If we already got a sell before and now we take immediate buy taxes
                 // we have a swap of for example CCMT => WETH => SHIB.
                 // Make sure the tax infos are at their correct place for that case (+1).
@@ -194,15 +189,15 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
     function _swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
-        address[] calldata path,
-        address to,
-        uint deadline
+        address[] calldata path
     ) private returns (uint[] memory amounts) {
-        (uint[] memory swapAmounts, SwapInfo[] memory swapInfos, TaxInfo[] memory taxInfos) = _getSwapInfos(amountIn, path);
+        (uint[] memory swapAmounts, SwapInfo[] memory swapInfos, TaxInfo[] memory taxInfos) = _getSwapInfos(msg.sender, amountIn, path);
         amounts = swapAmounts;
-
+        
         require(amounts[amounts.length - 1] >= amountOutMin, "CCM: LESS_OUT");
+        
         IERC20(path[0]).transfer(pairFor(pcsFactory, path[0], path[1]), amounts[0]);
+        
         _swap(path, swapInfos);
         // Distribute taxes.
         for(uint i = 0; i < taxInfos.length; ++i){
@@ -222,7 +217,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         uint deadline
     ) public ensure(deadline) returns (uint[] memory amounts){
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
-        amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline);
+        amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path);
         require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
     }
 
@@ -246,7 +241,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
     {
         uint amountIn = msg.value;
         IWETH(WETH).deposit{value: amountIn}();
-        amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline);
+        amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path);
         require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
     }
     function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
@@ -260,7 +255,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         uint tokensNeeded = IPancakeRouter02(pcsRouter).getAmountsIn(amountOut, path)[0];
         require(tokensNeeded <= amountInMax, 'CCM: NOT_ENOUGH_OUT_FOR_IN');
         IERC20(path[0]).transferFrom(msg.sender, address(this), tokensNeeded);
-        amounts = _swapExactTokensForTokens(tokensNeeded, 0, path, to, deadline);
+        amounts = _swapExactTokensForTokens(tokensNeeded, 0, path);
         uint ethToTransfer = amounts[amounts.length - 1];
         IWETH(WETH).withdraw(ethToTransfer);
 
@@ -273,7 +268,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         returns (uint[] memory amounts)
     {
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
-        amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline);
+        amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path);
         uint ethToTransfer = amounts[amounts.length - 1];
         IWETH(WETH).withdraw(ethToTransfer);
         // Now send to the caller.
@@ -290,7 +285,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         require(amounts[0] <= msg.value, 'PancakeRouter: EXCESSIVE_INPUT_AMOUNT');
         if (msg.value > amounts[0]) TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
         IWETH(WETH).deposit{value: amounts[0]}();
-        amounts = _swapExactTokensForTokens(amounts[0], 0, path, to, deadline);
+        amounts = _swapExactTokensForTokens(amounts[0], 0, path);
         require(IERC20(path[path.length - 1]).transfer(to, amounts[amounts.length - 1]));
     }
 
@@ -302,12 +297,27 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
         uint deadline
     ) external ensure(deadline) virtual {
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
-        uint[] memory amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path, address(this), deadline);
+        uint[] memory amounts = _swapExactTokensForTokens(amountIn, amountOutMin, path);
         uint tokensToSend = amounts[amounts.length - 1];
         require(tokensToSend >= amountOutMin, "CCM: LESS_OUT");
         require(IERC20(path[path.length - 1]).transfer(to, tokensToSend), "Final transfer failed");
     }
 
+    error EstimatedSlippage(uint amountIn, uint8 slippageNeeded);
+    function estimateSlippage(
+        uint amountIn,
+        address[] calldata path,
+        uint deadline
+    ) public ensure(deadline){
+        (uint[] memory swapAmounts,,) = _getSwapInfos(msg.sender, amountIn, path);
+        uint[] memory amountsOut = IPancakeRouter02(pcsRouter).getAmountsOut(amountIn, path);
+        uint shouldGet = amountsOut[amountsOut.length - 1];
+        uint reallyGet = swapAmounts[swapAmounts.length - 1];
+        revert EstimatedSlippage({
+            amountIn: amountIn,
+            slippageNeeded: 100 - uint8(reallyGet * 100 / shouldGet)
+        });
+    }
 
     function _authorizeUpgrade(address newImplementation) internal virtual override {
         require(msg.sender == owner(), "CCM: CANNOT_UPGRADE");

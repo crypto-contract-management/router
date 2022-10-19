@@ -7,7 +7,8 @@
     "deploy:bsc_testnet": "npx hardhat run --network bsc_testnet scripts/deploy.ts",
     "deploy:bsc_testnet_token": "npx hardhat run --network bsc_testnet scripts/deploy_testtoken.ts",
     "deploy:bsc_testnet_token_fixed_taxes": "npx hardhat run --network bsc_testnet scripts/deploy_tcfixedtaxes.ts",
-    "deploy:bsc_testnet_upgrade": "npx hardhat run --network bsc_testnet scripts/deploy_upgrade.ts"
+    "deploy:bsc_testnet_upgrade": "npx hardhat run --network bsc_testnet scripts/deploy_upgrade.ts",
+    "deploy:bsc_testnet_upgrade_ccmt": "npx hardhat run --network bsc_testnet scripts/deploy_upgrade_ccmt.ts"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
@@ -27,6 +28,7 @@
     "ethereum-abi-types-generator": "^1.3.2",
     "ethers": "^5.7.1",
     "hardhat": "^2.9.9",
+    "hardhat-contract-sizer": "^2.6.1",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.7.21",
     "ts-node": ">=8.0.0",

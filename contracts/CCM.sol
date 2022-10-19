@@ -20,13 +20,9 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     address public WETH;
     // Tax settings
     struct TaxStats {
-        uint16 minTax;
-        uint16 maxTax;
-        uint16 currentTax;
-        uint32 resetTaxAfter;
-        uint32 resetMaxTaxAfter;
-        uint lastUpdated;
-        uint lastPrice;
+        uint16 minTax; uint16 maxTax; uint16 currentTax;
+        uint32 resetTaxAfter; uint taxesEarned;
+        uint lastUpdated; uint lastPrice;
     }
     TaxStats public buyTax;
     TaxStats public sellTax;
@@ -36,37 +32,30 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         uint lastUpdated;
     }
     mapping(address => WalletIndividualSellTax) public walletSellTaxes;
-    // Three tax receivers: Development/marketing, liquidity, reflections.
+    
     struct TaxDistribution {
-        address developmentWallet;
-        address reflectionsWallet;
-        address autoLiquidityWallet;
-        uint16 developmentTaxPercent;
-        uint16 reflectionsTaxPercent;
-        uint16 autoLiquidityTaxPercent;
+        address developmentWallet; 
+        uint16 developmentBuyTax; uint16 rewardBuyTax; uint16 autoLiquidityBuyTax; 
+        uint16 developmentSellTax;uint16 rewardSellTax; uint16 autoLiquiditySellTax;
     }
     TaxDistribution public taxDistribution;
     // Threshold to increase common sell taxes when too much tokens are sold.
     uint16 public increaseSellTaxThreshold;
     // Access control
     mapping(address => bool) public isBlacklisted;
-    modifier notBacklisted(address who){
-        require(!isBlacklisted[who]);
-        _;
-    }
     // Swap info
     address public pancakePair;
-    address public pancakeRouter;
-    uint private reflectionBalance;
+    uint private rewardBalance;
     // Rewards
     uint public gasForDividends;
     CCMDividendTracker dividendTracker;
+    uint public triggerDividendDistributionAt;
 
-    event TaxSettingsUpdated(uint16, uint16, uint16, uint32, uint32, uint, uint);
+    event TaxSettingsUpdated(uint16, uint16, uint16, uint32, uint, uint);
     function setTaxSettings(
         bool isBuy,
         uint16 minTax, uint16 maxTax, uint16 currentTax, 
-        uint32 resetTaxAfter, uint32 resetMaxTaxAfter, 
+        uint32 resetTaxAfter,
         uint lastUpdated, uint lastPrice) external onlyOwner {
         require(minTax <= currentTax && currentTax <= maxTax, "CCM: INVALID_TAX_SETTING");
         TaxStats memory existingTax = isBuy ? buyTax : sellTax;
@@ -75,7 +64,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
             maxTax == 0 ? existingTax.maxTax : maxTax,
             currentTax == 0 ? existingTax.currentTax : currentTax,
             resetTaxAfter == 0 ? existingTax.resetTaxAfter : resetTaxAfter,
-            resetMaxTaxAfter == 0 ? existingTax.resetMaxTaxAfter : resetMaxTaxAfter,
+            existingTax.taxesEarned,
             lastUpdated == 0 ? existingTax.lastUpdated : lastUpdated,
             lastPrice == 0 ? existingTax.lastPrice : lastPrice
         );
@@ -84,7 +73,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         else
             sellTax = newTax;
 
-        emit TaxSettingsUpdated(minTax, maxTax, currentTax, resetTaxAfter, resetMaxTaxAfter, lastUpdated, lastPrice);
+        emit TaxSettingsUpdated(minTax, maxTax, currentTax, resetTaxAfter, lastUpdated, lastPrice);
     }
     
     event WalletSellTaxesUpdated(address, uint16, uint);
@@ -93,74 +82,90 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         walletTaxes.cummulativeSellPercent = cummulativeTaxPercent;
         walletTaxes.lastUpdated = lastUpdated;
         walletSellTaxes[who] = walletTaxes;
-
         emit WalletSellTaxesUpdated(who, cummulativeTaxPercent, lastUpdated);
     }
 
-    event TaxDistributionUpdated(address, address, address, uint16, uint16, uint16);
+    event TaxDistributionUpdated(
+      address, 
+      uint16, uint16, uint16,
+      uint16, uint16, uint16
+    );
     function setTaxDistribution(
-        address developmentWallet, address reflectionsWallet, address autoLiquidityWallet,
-        uint16 developmentTaxPercent, uint16 reflectionsTaxPercent, uint16 autoLiquidityTaxPercent
+        address developmentWallet, 
+        uint16 developmentBuyTax, uint16 rewardBuyTax, uint16 autoLiquidityBuyTax, 
+        uint16 developmentSellTax, uint16 rewardSellTax, uint16 autoLiquiditySellTax
     ) external onlyOwner {
         require(
-            developmentTaxPercent + reflectionsTaxPercent + autoLiquidityTaxPercent == 1000,
+            developmentBuyTax + rewardBuyTax + autoLiquidityBuyTax == 1000 &&
+            developmentSellTax + rewardSellTax + autoLiquiditySellTax == 1000,
             "CCM: INVALID_TAX_DISTRIB"
         );
         TaxDistribution memory taxes = taxDistribution;
         if(developmentWallet != address(0))
             taxes.developmentWallet = developmentWallet;
-        if(reflectionsWallet != address(0))
-            taxes.reflectionsWallet = reflectionsWallet;
-        if(autoLiquidityWallet != address(0))
-            taxes.autoLiquidityWallet = autoLiquidityWallet;
         
-        taxes.developmentTaxPercent = developmentTaxPercent;
-        taxes.reflectionsTaxPercent = reflectionsTaxPercent;
-        taxes.autoLiquidityTaxPercent = autoLiquidityTaxPercent;
+        taxes.developmentBuyTax = developmentBuyTax;
+        taxes.developmentSellTax = developmentSellTax;
+        taxes.rewardBuyTax = rewardBuyTax;
+        taxes.rewardSellTax = rewardSellTax;
+        taxes.autoLiquidityBuyTax = autoLiquidityBuyTax;
+        taxes.autoLiquiditySellTax = autoLiquiditySellTax;
         taxDistribution = taxes;
-
         emit TaxDistributionUpdated(
-            developmentWallet, reflectionsWallet, autoLiquidityWallet, 
-            developmentTaxPercent, reflectionsTaxPercent, autoLiquidityTaxPercent
+            developmentWallet, 
+            developmentBuyTax, rewardBuyTax, autoLiquidityBuyTax,
+            developmentSellTax, rewardSellTax, autoLiquiditySellTax
         );
     }
 
     function initialize(address _router, address weth) external initializer {
-        TaxTokenBase.init(_router, "CryptoContractManagement", "CCM");
+        WETH = weth;
+        TaxTokenBase.init(_router, "CryptoContractManagement", "CCMT");
         __Ownable_init();
         __Pausable_init();
 
-        WETH = weth;
-        buyTax = TaxStats(30, 50, 50, 0, 0, 0, 0);
-        sellTax = TaxStats(100, 200, 100, 2 hours, 4 hours, 0, 0);
+        buyTax = TaxStats(50, 50, 50, 0, 0, 0, 0);
+        sellTax = TaxStats(100, 150, 100, 2 hours, 0, 0, 0);
         taxDistribution = TaxDistribution(
-            msg.sender, msg.sender, msg.sender,
-            450, 350, 200
+            msg.sender,
+            450, 350, 200, // Buy tax
+            350, 450, 200 // Sell tax
         );
-        increaseSellTaxThreshold = 30;
+        increaseSellTaxThreshold = 100;
 
         // We have a total of 100M tokens.
         _mint(msg.sender, 10**8 * 1 ether);
         // Our very own bnb rewards token!
         gasForDividends = 300000;
+        triggerDividendDistributionAt = 1 ether;
         dividendTracker = new CCMDividendTracker();
         dividendTracker.setExcludedFromDividend(owner(), true);
         dividendTracker.setExcludedFromDividend(address(this), true);
         dividendTracker.setExcludedFromDividend(_router, true);
     }
 
+    function pause() external onlyOwner {
+        _pause();
+    }
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     function _transfer(address from, address to, uint amount) internal override whenNotPaused {
+        require(!isBlacklisted[from] && !isBlacklisted[to]);
         super._transfer(from, to, amount);
         try dividendTracker.setBalance(from, balanceOf(from)) {} catch { }
         try dividendTracker.setBalance(to, balanceOf(to)) {} catch { }
         try dividendTracker.withdrawDividend() {} catch { }
     }
 
-    event GasForDividendsUpdated(uint, uint);
     function updateGasForDividends(uint gas) external onlyOwner {
-        uint oldGas = gasForDividends;
+        require(gas >= 300000 && gas <= 700000);
         gasForDividends = gas;
-        emit GasForDividendsUpdated(oldGas, gas);
+    }
+
+    function setTriggerDividendDistributionAt(uint triggerDividendAt) external onlyOwner {
+        triggerDividendDistributionAt = triggerDividendAt;
     }
 
     event PairAddressUpdated(address);
@@ -169,45 +174,43 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         pancakePair = pair;
         isTaxablePair[pancakePair] = true;
         dividendTracker.setExcludedFromDividend(pair, true);
-
         emit PairAddressUpdated(pair);
-    }
-
-    event PancakeRouterUpdated(address);
-    function setPancakeRouter(address router) external onlyOwner {
-        pancakeRouter = router;
-        
-        emit PancakeRouterUpdated(router);
     }
 
     event IsBlacklistedUpdated(address, bool);
     function setIsBlacklisted(address who, bool _isBlackListed) external onlyOwner {
         isBlacklisted[who] = _isBlackListed;
-
         emit IsBlacklistedUpdated(who, _isBlackListed);
     }
 
+    function setIncreaseSellTaxThreshold(uint16 sellThreshold) external onlyOwner {
+        increaseSellTaxThreshold = sellThreshold;
+    }
+
+    event AutoLiquidityDistributed(address, uint);
     function _handleAutoLiquidityTaxes(address liquidityPair, address taxableToken, uint taxes) private {
-        require(liquidityPair != address(0), "CCM: Invalid liquidity address");
         // We simply transfer our liquidity to the pair and sync the internal balances.
         IERC20(taxableToken).transfer(liquidityPair, taxes);
         IPancakePair(liquidityPair).sync();
+        emit AutoLiquidityDistributed(taxableToken, taxes);
     }
 
-    function _handleReflectionsTaxes(uint taxes) private {
+    event RewardTaxesDistributed(uint);
+    function _handleRewardTaxes(uint taxes) private {
         // When the reflection balances reaches the 1eth threshold process it by the dividend tracker.
-        uint currentReflectionBalance = reflectionBalance + taxes;
-        if(currentReflectionBalance >= 1 ether && dividendTracker.totalSupply() > 0){
-            reflectionBalance = 0;
+        uint currentRewardBalance = rewardBalance + taxes;
+        if(currentRewardBalance >= triggerDividendDistributionAt && dividendTracker.totalSupply() > 0){
+            rewardBalance = 0;
             // Get ETH for WETH.
-            IWETH(WETH).withdraw(currentReflectionBalance);
+            IWETH(WETH).withdraw(currentRewardBalance);
             // Send funds to tracker.
-            (bool success,) = payable(dividendTracker).call{value: currentReflectionBalance}("");
+            (bool success,) = payable(dividendTracker).call{value: currentRewardBalance}("");
             require(success);
+            emit RewardTaxesDistributed(currentRewardBalance);
             // Claim rewards for users.
             try dividendTracker.processAccounts(gasForDividends) {} catch { }
         } else {
-            reflectionBalance = currentReflectionBalance;
+            rewardBalance = currentRewardBalance;
         }
     }
     /// @notice Called after you claimed tokens.
@@ -217,38 +220,38 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     function onTaxClaimed(address taxableToken, uint amount) external override {
         // Here we're now distributing funds accordingly.
         TaxDistribution memory taxes = taxDistribution;
-        uint developmentTaxes = amount * taxes.developmentTaxPercent / 1000;
-        uint reflectionsTaxes = amount * taxes.reflectionsTaxPercent / 1000;
-        uint autoLiquidityTaxes = amount * taxes.autoLiquidityTaxPercent / 1000;
+        TaxStats memory tempBuyTax = buyTax;
+        TaxStats memory tempSellTax = sellTax;
+        // We take different buy and sell taxes so we add those up and divide by 2000 instead of the common 1000.
+        uint developmentTaxes = (tempBuyTax.taxesEarned * taxes.developmentBuyTax + tempSellTax.taxesEarned * taxes.developmentSellTax) / 1000;
+        uint rewardTaxes = (tempBuyTax.taxesEarned * taxes.rewardBuyTax + tempSellTax.taxesEarned * taxes.rewardSellTax) / 1000;
+        uint autoLiquidityTaxes = (tempBuyTax.taxesEarned * taxes.autoLiquidityBuyTax + tempSellTax.taxesEarned * taxes.autoLiquiditySellTax) / 1000;
         IERC20(taxableToken).transfer(taxes.developmentWallet, developmentTaxes);
-        _handleReflectionsTaxes(reflectionsTaxes);
-        _handleAutoLiquidityTaxes(taxes.autoLiquidityWallet, taxableToken, autoLiquidityTaxes);
+        _handleRewardTaxes(rewardTaxes);
+        _handleAutoLiquidityTaxes(pancakePair, taxableToken, autoLiquidityTaxes);
+        buyTax.taxesEarned = 0;
+        sellTax.taxesEarned = 0;
     }
-
 
     function _tokensLeftAfterTax(uint amountIn, uint16 tax) private pure returns(uint tokensLeft) {
         // Higher precision is first mul then div. If that would cause an overflow do it the other way around.
         bool preciseMode = ~uint(0) / tax > amountIn;
-        unchecked {
-            if(preciseMode)
-                tokensLeft = amountIn * tax / 1000;
-            else
-                tokensLeft = amountIn / 1000 * tax;
-        }
+        if(preciseMode)
+            tokensLeft = amountIn * tax / 1000;
+        else
+            tokensLeft = amountIn / 1000 * tax;
     }
-    function _takeBuyTax(uint amountIn) private view returns (uint buyTaxToTake) {
+    function _takeBuyTax(uint amountIn) private returns (uint buyTaxToTake) {
         // If the token performs well we can reduce the buy tax down to a certain amount.
         // Will do that in the future, for now it shall be a static value.
         buyTaxToTake = _tokensLeftAfterTax(amountIn, buyTax.currentTax);
+        buyTax.taxesEarned += buyTaxToTake;
     }
-    // Sell tax will increase to 20% if sell pressure is high.
-    // Each sell increase will be kept for 2h, once reached the max sell tax it will stay for 4h.
-    // No worries though: We put a lot of token fees right back in into the token itself, so you profit from that!
+    // Sell tax is either 10% or 15%, depending on whether the token dropped in price by 10%.
+    // Resets after 2h.
     function _takeSellTax(address taxableToken, address from, uint amountIn) private returns (uint sellTaxToTake) {
         TaxStats memory currentSellTax = sellTax;
-        WalletIndividualSellTax memory currentUserSellTax = walletSellTaxes[from];
         uint tokenBalance = IERC20(taxableToken).balanceOf(pancakePair);
-        require(tokenBalance > 0);
         // Update most recent price if never set (beginning) or balance increased (someone bought before someone sold).
         if(currentSellTax.lastPrice == 0 || tokenBalance > currentSellTax.lastPrice)
             currentSellTax.lastPrice = tokenBalance;
@@ -257,30 +260,15 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
             currentSellTax.lastUpdated = block.timestamp;
             currentSellTax.currentTax = currentSellTax.minTax;
             currentSellTax.lastPrice = tokenBalance;
-        } 
-        uint balanceDroppedInPercent = amountIn  * 1000 / tokenBalance;
-        // Handle common token taxes.
-        if(currentSellTax.currentTax < currentSellTax.maxTax) {
-            // If the balance would drop by `increaseSellTaxThreshold` we increase the tax gradually.
-            if(balanceDroppedInPercent >= increaseSellTaxThreshold){
-                // Decrease sell tax 4 times before reaching the max tax state.
-                uint16 taxStep = (currentSellTax.maxTax - currentSellTax.minTax) / 4;
-                // If this one sell is big enough it could force multiple tax steps.
-                uint taxStepsTaken = balanceDroppedInPercent / increaseSellTaxThreshold;
-                currentSellTax.currentTax += uint16(taxStep * taxStepsTaken);
-                // If we reached max sell tax lock it for `resetMaxTaxAfter`.
-                // We reach that by updating `lastUpdated accordingly`.
-                currentSellTax.lastUpdated = block.timestamp;
-                if(currentSellTax.currentTax >= currentSellTax.maxTax){
-                    currentSellTax.currentTax = currentSellTax.maxTax;
-                    currentSellTax.lastUpdated += (currentSellTax.resetMaxTaxAfter - currentSellTax.resetTaxAfter);
-                }
-            }
-        } else if(block.timestamp >= currentSellTax.lastUpdated + currentSellTax.resetTaxAfter) {
+        }
+        uint balanceDroppedInPercent = amountIn  * 1000 / currentSellTax.lastPrice;
+        // Price dropped more than 10% => set to 15%.
+        if(balanceDroppedInPercent >= increaseSellTaxThreshold) {
             currentSellTax.currentTax = currentSellTax.maxTax;
-            currentSellTax.lastUpdated = block.timestamp + (currentSellTax.resetMaxTaxAfter - currentSellTax.resetTaxAfter);
+            currentSellTax.lastUpdated = block.timestamp;
         }
         // Handle user-specific selling. This is reset every 24h.
+        WalletIndividualSellTax memory currentUserSellTax = walletSellTaxes[from];
         if(block.timestamp >= currentUserSellTax.lastUpdated + 24 hours){
             currentUserSellTax.cummulativeSellPercent = uint16(balanceDroppedInPercent);
             if(currentUserSellTax.cummulativeSellPercent > 350)
@@ -299,6 +287,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         walletSellTaxes[from] = currentUserSellTax;
         sellTax = currentSellTax;
         sellTaxToTake = _tokensLeftAfterTax(amountIn, currentSellTax.currentTax + userTaxToTake);
+        sellTax.taxesEarned += sellTaxToTake;
     }
     /// @notice Called when someone takes out (sell) or puts in (buy) the taxable token.
     /// @notice We basically tell you the amount processed and ask you how many tokens
@@ -311,7 +300,7 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     /// @param isBuy True if `from` bought your token (they sold WETH for example). False if it is a sell.
     /// @param amount The amount bought or sold.
     /// @return taxToTake The tax we should take. Must be lower than or equal to `amount`.
-    function takeTax(address taxableToken, address from, bool isBuy, uint amount) external notBacklisted(from) override returns(uint taxToTake) {
+    function takeTax(address taxableToken, address from, bool isBuy, uint amount) external override returns(uint taxToTake) {
         if(isBuy)
             taxToTake = _takeBuyTax(amount);
         else
@@ -327,7 +316,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     /// @param amount The amount to withdraw.
     function withdrawTax(address token, address to, uint amount) external override onlyOwner {
         IERC20(token).transfer(to, amount);
-
         emit TaxesWithdrawn(token, to, amount);
     }
 
@@ -352,6 +340,6 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     dividendTracker.processAccounts(gasAvailable);
   }
 
-    receive() external payable { }
-    fallback() external payable { }
+  receive() external payable { }
+  fallback() external payable { }
 }

@@ -66,7 +66,7 @@ describe("CCM", () => {
     describe("General properties", async() => {
         it("Correct name", async() => {
             expect(await ccmContract.name()).to.eq("CryptoContractManagement");
-            expect(await ccmContract.symbol()).to.eq("CCM");
+            expect(await ccmContract.symbol()).to.eq("CCMT");
         });
         it("Owner is correct", async() => {
             expect(await ccmContract.owner()).to.eq(owner.address);
@@ -90,7 +90,6 @@ describe("CCM", () => {
             await ccmContract.setPairAddress(bob.address);
             expect(await ccmContract.pancakePair()).to.eq(bob.address);
             expect(await ccmContract.isTaxablePair(bob.address)).to.eq(true);
-            expect(await ccmContract.isTaxablePair(alice.address)).to.eq(false);
         });
         it("setPancakeRouter", async() => {
             await expect(ccmByAlice.setPairAddress(ccmByAlice.address)).to.be.revertedWith("Ownable: caller is not the owner");
@@ -111,23 +110,14 @@ describe("CCM", () => {
             ccmWethPair = await createPair(ccmContract, MyWBNBContract);
         })
         it("Correct initial tax settings", async() => {
-            /* 
-            buyTax = TaxStats(30, 50, 50, 0, 0, 0, 0);
-            sellTax = TaxStats(100, 200, 100, 2 hours, 4 hours, 0, 0);
-            taxDistribution = TaxDistribution(
-                msg.sender, address(0), address(0),
-                450, 350, 200
-            );
-            increaseSellTaxThreshold = 30;
-            */
             const buyTax = await ccmContract.buyTax();
             const sellTax = await ccmContract.sellTax();
             const taxDistribution = await ccmContract.taxDistribution();
             const increaseSellTaxThreshold = await ccmContract.increaseSellTaxThreshold();
-            const buyTaxExpected = [30, 50, 50, 0, 0, BigNumber.from(0), BigNumber.from(0)];
-            const sellTaxExpected = [100, 200, 100, 7200, 14400, BigNumber.from(0), BigNumber.from(0)];
-            const taxDistributionExpected = [owner.address, owner.address, owner.address, 450, 350, 200];
-            const increaseSellTaxThresholdExpected = 30;
+            const buyTaxExpected = [50, 50, 50, 0, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)];
+            const sellTaxExpected = [100, 150, 100, 7200, BigNumber.from(0), BigNumber.from(0), BigNumber.from(0)];
+            const taxDistributionExpected = [owner.address, 450, 350, 200, 350, 450, 200];
+            const increaseSellTaxThresholdExpected = 100;
 
             expect(buyTax).to.eql(buyTaxExpected);
             expect(sellTax).to.eql(sellTaxExpected);
@@ -136,62 +126,61 @@ describe("CCM", () => {
         });
         it("setTaxDistribution", async() => {
             await expect(ccmByAlice.setTaxDistribution(
-                alice.address, alice.address, ccmWethPair,
-                500, 250, 250
+                alice.address,
+                500, 250, 250, 200, 500, 300
             )).to.be.revertedWith("Ownable: caller is not the owner");
             await expect(ccmContract.setTaxDistribution(
-                alice.address, alice.address, ccmWethPair,
-                500, 251, 250
+                alice.address,
+                500, 251, 250, 200, 500, 300
             )).to.be.revertedWith("CCM: INVALID_TAX_DISTRIB");
             await expect(ccmContract.setTaxDistribution(
-                alice.address, alice.address, ccmWethPair,
-                400, 0, 250
+                alice.address,
+                400, 0, 250, 200, 500, 300
             )).to.be.revertedWith("CCM: INVALID_TAX_DISTRIB");
             await ccmContract.setTaxDistribution(
-                alice.address, alice.address, ccmWethPair,
-                500, 250, 250
+                alice.address,
+                500, 250, 250, 200, 500, 300
             );
             expect(await ccmContract.taxDistribution()).to.eql([
-                alice.address, alice.address, ccmWethPair,
-                500, 250, 250
+                alice.address,
+                500, 250, 250, 200, 500, 300
             ]);
         });
         it("setTaxSettings", async() => {
             const resetTaxAfter = await getTime() + 3600;
-            const resetMaxTaxAfter = resetTaxAfter + 3600;
             const lastUpdated = await getTime();
             // Invalid configurations.
             await expect(ccmByBob.setTaxSettings(
                 true, 75, 100, 80,
-                resetTaxAfter, resetMaxTaxAfter,
+                resetTaxAfter,
                 lastUpdated, parseEther("1")
             )).to.be.revertedWith("Ownable: caller is not the owner");
             await expect(ccmContract.setTaxSettings(
                 true, 75, 74, 80,
-                resetTaxAfter, resetMaxTaxAfter,
+                resetTaxAfter,
                 lastUpdated, parseEther("1")
             )).to.be.revertedWith("CCM: INVALID_TAX_SETTING");
             await expect(ccmContract.setTaxSettings(
                 true, 75, 80, 70,
-                resetTaxAfter, resetMaxTaxAfter,
+                resetTaxAfter,
                 lastUpdated, parseEther("1")
             )).to.be.revertedWith("CCM: INVALID_TAX_SETTING");
             // Valid configurations.
             await ccmContract.setTaxSettings(
                 true, 75, 100, 80,
-                resetTaxAfter, resetMaxTaxAfter,
+                resetTaxAfter,
                 lastUpdated, parseEther("1")
             );
             await ccmContract.setTaxSettings(
                 false, 175, 250, 180,
-                resetTaxAfter, resetMaxTaxAfter,
+                resetTaxAfter,
                 lastUpdated, parseEther("2")
             );
             // Retrieve and check.
             const buyTax = await ccmContract.buyTax();
             const sellTax = await ccmContract.sellTax();
-            const buyTaxExpected = [75, 100, 80, resetTaxAfter, resetMaxTaxAfter, BigNumber.from(lastUpdated), parseEther("1")];
-            const sellTaxExpected = [175, 250, 180, resetTaxAfter, resetMaxTaxAfter, BigNumber.from(lastUpdated), parseEther("2")];
+            const buyTaxExpected = [75, 100, 80, resetTaxAfter,  BigNumber.from(0), BigNumber.from(lastUpdated), parseEther("1")];
+            const sellTaxExpected = [175, 250, 180, resetTaxAfter,  BigNumber.from(0), BigNumber.from(lastUpdated), parseEther("2")];
             expect(buyTax).to.eql(buyTaxExpected);
             expect(sellTax).to.eql(sellTaxExpected);
         });
@@ -213,12 +202,7 @@ describe("CCM", () => {
             // Set up token economy.
             await routerContract.claimInitialFeeOwnership(ccmContract.address);
             await routerContract.chooseTaxTierLevel(ccmContract.address, {value: parseEther("0.5")});
-            await ccmContract.setPancakeRouter(pcsRouter.address);
             await ccmContract.setPairAddress(pairAddress);
-            await ccmContract.setTaxDistribution(
-                ethers.constants.AddressZero, ethers.constants.AddressZero, pairAddress,
-                450, 350, 200
-            );
         });
         it("Default deploy settings", async() => {
             const ownerWethBefore = await MyWBNBContract.balanceOf(owner.address);
@@ -290,15 +274,15 @@ describe("CCM", () => {
                 [ccmContract.address, MyWBNBContract.address], clarice.address,
                 await getTime()
             );
-            // Inducing a 35% price drop results in 20% common taxes from now on as well as an extra of 15% user tax => 35% total taxes.
+            // Inducing a 35% price drop results in 15% common taxes from now on as well as an extra of 15% user tax => 30% total taxes.
             // Also 0.5% router tax.
-            const clariceWethToGetExpected = clariceWethToGet.mul(645).div(1000);
-            let contractTaxesTakenForSell = clariceWethToGet.mul(350).div(1000);
-            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
+            const clariceWethToGetExpected = clariceWethToGet.mul(695).div(1000).add(1);
+            let contractTaxesTakenForSell = clariceWethToGet.mul(300).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(350).div(1000));
 
-            const clariceWethGained = (await MyWBNBContract.balanceOf(clarice.address)).sub(clariceWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
+            const clariceWethGained = (await MyWBNBContract.balanceOf(clarice.address)).sub(clariceWethBefore);
             expect(clariceWethGained).to.eq(clariceWethToGetExpected);
-            // Alice sells for 5% drop so she should only experience the 20% total sell force.
+            // Alice sells for 5% drop so she should only experience the 15% total sell force.
             approveCCMContract(ccmContract, alice, routerContract.address);
             const aliceWethToGet = (await MyWBNBContract.balanceOf(pairAddress)).mul(50).div(1000);
             const aliceWethBefore = await MyWBNBContract.balanceOf(alice.address);
@@ -307,17 +291,16 @@ describe("CCM", () => {
                 [ccmContract.address, MyWBNBContract.address], alice.address,
                 await getTime()
             );
-            // Inducing a 5% price drop results in 20% common taxes and no individual taxes.
+            // Inducing a 5% price drop results in 15% common taxes and no individual taxes.
             // Also 0.5% router tax though.
-            const aliceWethToGetExpected = aliceWethToGet.mul(795).div(1000).add(1); // Also strange.
-            contractTaxesTakenForSell = aliceWethToGet.mul(200).div(1000);
-            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
-            const aliceWethGained = (await MyWBNBContract.balanceOf(alice.address)).sub(aliceWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
+            const aliceWethToGetExpected = aliceWethToGet.mul(845).div(1000).add(2); // Also strange.
+            contractTaxesTakenForSell = aliceWethToGet.mul(150).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(350).div(1000));
+            const aliceWethGained = (await MyWBNBContract.balanceOf(alice.address)).sub(aliceWethBefore);
             expect(aliceWethGained).to.eq(aliceWethToGetExpected);
             // Now we forward in time 24 hours to reset the base sell tax to 10%.
             await time.increase(24 * 60 * 60);
             // Now bob will sell 10% of remaining tokens.
-            // This will cause an increase of the common sell from 10% to 13% and he will pay an additional 2.5% user-specific fees.
             approveCCMContract(ccmContract, bob, routerContract.address);
             const bobWethToGet = (await MyWBNBContract.balanceOf(pairAddress)).mul(100).div(1000);
             const bobWethBefore = await MyWBNBContract.balanceOf(bob.address);
@@ -326,13 +309,13 @@ describe("CCM", () => {
                 [ccmContract.address, MyWBNBContract.address], bob.address,
                 await getTime()
             );
-            // Inducing a 10% price drop results in 17.5% common taxes and 2.5% individual taxes.
-            // Also 0.5% router tax though. So a total of 20.5%.
-            // Due to pcs calc imprecise calculations our contract expects 19.9% taxes which is 20.4% in total.
-            const bobWethToGetExpected = bobWethToGet.mul(796).div(1000).add(1); // Also strange.
-            contractTaxesTakenForSell = bobWethToGet.mul(199).div(1000);
-            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
-            const bobWethGained = (await MyWBNBContract.balanceOf(bob.address)).sub(bobWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
+            // Inducing a 10% price drop results in 15% common taxes and 2.5% individual taxes.
+            // Price calcs are imprecise so we actually only dropped about 9.9% which is 10% + 2.4% => 12.4% tax in total.
+            // Also 0.5% router tax though. So a total of 12.9%.
+            const bobWethToGetExpected = bobWethToGet.mul(871).div(1000).add(2); // Also strange.
+            contractTaxesTakenForSell = bobWethToGet.mul(124).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(350).div(1000));
+            const bobWethGained = (await MyWBNBContract.balanceOf(bob.address)).sub(bobWethBefore);
             expect(bobWethGained).to.eq(bobWethToGetExpected);
             // Now check that the owner received the correct fees for selling as well.
             const ownerWethSellGained = (await MyWBNBContract.balanceOf(owner.address)).sub(ownerWethBeforeSell);
@@ -346,12 +329,7 @@ describe("CCM", () => {
             // Set up token economy.
             await routerContract.claimInitialFeeOwnership(ccmContract.address);
             await routerContract.chooseTaxTierLevel(ccmContract.address, {value: parseEther("0.5")});
-            await ccmContract.setPancakeRouter(pcsRouter.address);
             await ccmContract.setPairAddress(pairAddress);
-            await ccmContract.setTaxDistribution(
-                ethers.constants.AddressZero, ethers.constants.AddressZero, pairAddress,
-                450, 350, 200
-            );
             await ccmContract.setExcludedFromDividend(clarice.address, true);
             await ccmContract.setMinTokensForDividends(parseEther("10"));
         });
@@ -371,6 +349,7 @@ describe("CCM", () => {
             const aliceCCMExpected = (
                 (await pcsRouter.getAmountsOut(aliceEthSentToPair, [MyWBNBContract.address, ccmContract.address]))[1]
             );
+            console.log("Swapping on token: ", MyWBNBContract.address);
             await routerByAlice.swapExactETHForTokens(
                 aliceCCMExpected, [MyWBNBContract.address, ccmContract.address], 
                 alice.address, await getTime(),
@@ -435,11 +414,11 @@ describe("CCM", () => {
                 [ccmContract.address, MyWBNBContract.address], clarice.address,
                 await getTime()
             );
-            // Inducing a 35% price drop results in 20% common taxes from now on as well as an extra of 15% user tax => 35% total taxes.
+            // Inducing a 35% price drop results in 15% common taxes from now on as well as an extra of 15% user tax => 30% total taxes.
             // Also 0.5% router tax.
-            const clariceWethToGetExpected = clariceWethToGet.mul(645).div(1000);
-            let contractTaxesTakenForSell = clariceWethToGet.mul(350).div(1000);
-            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
+            const clariceWethToGetExpected = clariceWethToGet.mul(695).div(1000);
+            let contractTaxesTakenForSell = clariceWethToGet.mul(300).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(350).div(1000));
 
             const clariceWethGained = (await MyWBNBContract.balanceOf(clarice.address)).sub(clariceWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
             expect(clariceWethGained).to.eq(clariceWethToGetExpected);
@@ -452,17 +431,16 @@ describe("CCM", () => {
                 [ccmContract.address, MyWBNBContract.address], alice.address,
                 await getTime()
             );
-            // Inducing a 5% price drop results in 20% common taxes and no individual taxes.
+            // Inducing a 5% price drop results in 15% common taxes and no individual taxes.
             // Also 0.5% router tax though.
-            const aliceWethToGetExpected = aliceWethToGet.mul(795).div(1000).add(1); // Also strange.
-            contractTaxesTakenForSell = aliceWethToGet.mul(200).div(1000);
-            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
+            const aliceWethToGetExpected = aliceWethToGet.mul(845).div(1000).add(1); // Also strange.
+            contractTaxesTakenForSell = aliceWethToGet.mul(150).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(350).div(1000));
             const aliceWethGained = (await MyWBNBContract.balanceOf(alice.address)).sub(aliceWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
             expect(aliceWethGained).to.eq(aliceWethToGetExpected);
             // Now we forward in time 24 hours to reset the base sell tax to 10%.
             await time.increase(24 * 60 * 60);
             // Now bob will sell 10% of remaining tokens.
-            // This will cause an increase of the common sell from 10% to 13% and he will pay an additional 2.5% user-specific fees.
             approveCCMContract(ccmContract, bob, routerContract.address);
             const bobWethToGet = (await MyWBNBContract.balanceOf(pairAddress)).mul(100).div(1000);
             const bobWethBefore = await MyWBNBContract.balanceOf(bob.address);
@@ -471,13 +449,13 @@ describe("CCM", () => {
                 [ccmContract.address, MyWBNBContract.address], bob.address,
                 await getTime()
             );
-            // Inducing a 10% price drop results in 17.5% common taxes and 2.5% individual taxes.
-            // Also 0.5% router tax though. So a total of 20.5%.
-            // Due to pcs calc imprecise calculations our contract expects 19.9% taxes which is 20.4% in total.
-            const bobWethToGetExpected = bobWethToGet.mul(796).div(1000).add(1); // Also strange.
-            contractTaxesTakenForSell = bobWethToGet.mul(199).div(1000);
-            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(450).div(1000));
-            const bobWethGained = (await MyWBNBContract.balanceOf(bob.address)).sub(bobWethBefore).sub(1); // TODO: Figure out why we have 1 more than we should (contract says we do not).
+             // Inducing a 10% price drop results in 15% common taxes and 2.5% individual taxes.
+            // Price calcs are imprecise so we actually only dropped about 9.9% which is 10% + 2.4% => 12.4% tax in total.
+            // Also 0.5% router tax though. So a total of 12.9%.
+            const bobWethToGetExpected = bobWethToGet.mul(871).div(1000).add(2); // Also strange.
+            contractTaxesTakenForSell = bobWethToGet.mul(124).div(1000);
+            ownerWethSellGainedExpected = ownerWethSellGainedExpected.add(contractTaxesTakenForSell.mul(350).div(1000));
+            const bobWethGained = (await MyWBNBContract.balanceOf(bob.address)).sub(bobWethBefore);
             expect(bobWethGained).to.eq(bobWethToGetExpected);
             // Now check that the owner received the correct fees for selling as well.
             const ownerWethSellGained = (await MyWBNBContract.balanceOf(owner.address)).sub(ownerWethBeforeSell);
