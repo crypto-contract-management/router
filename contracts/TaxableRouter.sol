@@ -16,7 +16,6 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     mapping(address => address) public feeOwners;
 
     /// @notice Modifier which only allows fee owners to change fees at all.
-    /// @notice No other one (even not us) is able to set any token fees.
     /// @param token: Token of which `msg.sender` has to be the fee owner of.
     modifier byFeeOwner(address token) {
         require(msg.sender == feeOwners[token]);
@@ -49,7 +48,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
     /// @notice HOWEVER we can only make it "better".
     /// @notice So for tokens being unitialized we can set a max fee of 1%.
     /// @notice For tokens that are already initialized we can only set a lower fee than exists.
-    /// @notice This is a safety measure for our clients. We don't want to harm anyone.
+    /// @notice This is a safety measure for our clients.
     /// @param token: Token to set tax tier for.
     /// @param tax: Taxes users have to pay (send to this router). Max 1% (but you can get less ;)).
     function setTaxTierLevel(address token, uint16 tax)
@@ -80,8 +79,8 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // The tier you get solely depends on the BNB you send in.
         // Your tier level CAN be changed later. Just call the method again.
         // We'll make sure that you can only upgrade e.g. not pay higher taxes than before, so no downgrade for you.
-        uint apprenticeFee = 0.5 ether;
-        uint expertFee = 1 ether;
+        uint apprenticeFee = 5 ether;
+        uint expertFee = 10 ether;
         // The BNB sent in has to be one of the levels, otherwise we reject.
         // We also only want to have that exact amount, not more, not less.
         if(msg.value == expertFee){
