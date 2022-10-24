@@ -1,6 +1,35 @@
+// Token contract of:
+// ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄       ▄▄       ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄    ▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄        ▄ 
+// ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░▌     ▐░░▌     ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌  ▐░▌▐░░░░░░░░░░░▌▐░░▌      ▐░▌
+// ▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌░▌   ▐░▐░▌      ▀▀▀▀█░█▀▀▀▀ ▐░█▀▀▀▀▀▀▀█░▌▐░▌ ▐░▌ ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌░▌     ▐░▌
+// ▐░▌          ▐░▌          ▐░▌▐░▌ ▐░▌▐░▌          ▐░▌     ▐░▌       ▐░▌▐░▌▐░▌  ▐░▌          ▐░▌▐░▌    ▐░▌
+// ▐░▌          ▐░▌          ▐░▌ ▐░▐░▌ ▐░▌          ▐░▌     ▐░▌       ▐░▌▐░▌░▌   ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌ ▐░▌   ▐░▌
+// ▐░▌          ▐░▌          ▐░▌  ▐░▌  ▐░▌          ▐░▌     ▐░▌       ▐░▌▐░░▌    ▐░░░░░░░░░░░▌▐░▌  ▐░▌  ▐░▌
+// ▐░▌          ▐░▌          ▐░▌   ▀   ▐░▌          ▐░▌     ▐░▌       ▐░▌▐░▌░▌   ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌   ▐░▌ ▐░▌
+// ▐░▌          ▐░▌          ▐░▌       ▐░▌          ▐░▌     ▐░▌       ▐░▌▐░▌▐░▌  ▐░▌          ▐░▌    ▐░▌▐░▌
+// ▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌       ▐░▌          ▐░▌     ▐░█▄▄▄▄▄▄▄█░▌▐░▌ ▐░▌ ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌     ▐░▐░▌
+// ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌       ▐░▌          ▐░▌     ▐░░░░░░░░░░░▌▐░▌  ▐░▌▐░░░░░░░░░░░▌▐░▌      ▐░░▌
+ // ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀            ▀       ▀▀▀▀▀▀▀▀▀▀▀  ▀    ▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀        ▀▀ 
+// Welcome to CryptoContractManagement.
+// Join us on our journey of revolutionizing the fund generation mode of crypto tokens.
+//
+// Key features:
+// - Sophisticated taxation model to allow tokens to gather funds without hurting the charts
+// - Highly customizable infrastructure which gives all the power into the hands of the token developers
+// - Novel approach to separate token funding from its financial ecosystem
+//
+// Socials:
+// - Website: https://ccmtoken.tech
+// - Github: https://github.com/orgs/crypto-contract-management/repositories
+// - Telegram: 
+// - Twitter: https://twitter.com/ccmtoken
+// Initial tokenomics:
+// - 5% buy fee split up into DEV/Marketing, bnb rewards, auto liquidity
+// - 10%-15% sell fee with an individual extra 15% sell fee if wallets induce a high price drop. Same split as above
+// - Our goal is to recude fees dramatically over the course of the project
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
-
 
 import "./TaxTokenBase.sol";
 import "./CCMDividendTracker.sol";
@@ -52,6 +81,14 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     uint public triggerDividendDistributionAt;
 
     event TaxSettingsUpdated(uint16, uint16, uint16, uint32, uint, uint);
+    /// @notice Updates the taxation of a buy/sell.
+    /// @param isBuy Flag whether to update buy or sell.
+    /// @param minTax Minimum tax percentage.
+    /// @param maxTax Maximum tax percentage.
+    /// @param currentTax Currently active tax percentage. Between min and max.
+    /// @param resetTaxAfter Time interval in seconds after which we switch from current to min tax.
+    /// @param lastUpdated Time indicator when taxes have been altered last time.
+    /// @param lastPrice Price data to allow calculate differences in price movement.
     function setTaxSettings(
         bool isBuy,
         uint16 minTax, uint16 maxTax, uint16 currentTax, 
@@ -77,7 +114,12 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     }
     
     event WalletSellTaxesUpdated(address, uint16, uint);
+    /// @notice Sets individual sell taxes on a wallet by setting its amount sold.
+    /// @param who The tax payer.
+    /// @param cummulativeTaxPercent The amount that wallet sold.
+    /// @param lastUpdated Time indicator when taxes have been altered last time.
     function setWalletSellTaxes(address who, uint16 cummulativeTaxPercent, uint lastUpdated) external onlyOwner {
+        require(cummulativeTaxPercent <= 350);
         WalletIndividualSellTax memory walletTaxes = walletSellTaxes[who];
         walletTaxes.cummulativeSellPercent = cummulativeTaxPercent;
         walletTaxes.lastUpdated = lastUpdated;
@@ -90,6 +132,16 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
       uint16, uint16, uint16,
       uint16, uint16, uint16
     );
+    /// @notice Describes the distribution of taxes and sets dev wallet.
+    /// @notice Our buy and sell taxes are split up between dev/marketing, bnb rewards and auto liquidity.
+    /// @notice Using this method we can switch the percentage a certain target earns (more liquidity for example).
+    /// @param developmentWallet Dev wallet.
+    /// @param developmentBuyTax Percentage of taxes to take for development/marketing on buying.
+    /// @param rewardBuyTax Percentage of taxes to take for bnb rewards on buying.
+    /// @param autoLiquidityBuyTax Percentage of taxes to take for auto liquidity on buying.
+    /// @param developmentBuyTax Same as above but for selling.
+    /// @param rewardBuyTax Same as above but for selling.
+    /// @param autoLiquidityBuyTax Same as above but for selling.
     function setTaxDistribution(
         address developmentWallet, 
         uint16 developmentBuyTax, uint16 rewardBuyTax, uint16 autoLiquidityBuyTax, 
@@ -159,16 +211,21 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
         try dividendTracker.withdrawDividend() {} catch { }
     }
 
+    /// @notice Updates the max gas used for distribution bnb rewards.
+    /// @param gas Gas used.
     function updateGasForDividends(uint gas) external onlyOwner {
         require(gas >= 300000 && gas <= 700000);
         gasForDividends = gas;
     }
-
+    /// @notice Sets the threshold on which we distribute dividends (bnb rewards).
+    /// @param triggerDividendAt Threshold.
     function setTriggerDividendDistributionAt(uint triggerDividendAt) external onlyOwner {
         triggerDividendDistributionAt = triggerDividendAt;
     }
 
     event PairAddressUpdated(address);
+    /// @notice Sets the liquidity pair address.
+    /// @param pair Pair address.
     function setPairAddress(address pair) external onlyOwner {
         isTaxablePair[pancakePair] = false;
         pancakePair = pair;
@@ -178,11 +235,16 @@ contract CryptoContractManagement is UUPSUpgradeable, PausableUpgradeable, Ownab
     }
 
     event IsBlacklistedUpdated(address, bool);
+    /// @notice Allows to (de-)blacklist wallets when they are harmful.
+    /// @param who Wallet to blacklist.
+    /// @param _isBlackListed Should be blacklisted? Yes or no.
     function setIsBlacklisted(address who, bool _isBlackListed) external onlyOwner {
         isBlacklisted[who] = _isBlackListed;
         emit IsBlacklistedUpdated(who, _isBlackListed);
     }
-
+    /// @notice Every wallet may induce a price drop without paying additional fees.
+    /// @notice This method sets the threshold after they pay additional fees.
+    /// @param sellThreshold Threshold.
     function setIncreaseSellTaxThreshold(uint16 sellThreshold) external onlyOwner {
         increaseSellTaxThreshold = sellThreshold;
     }

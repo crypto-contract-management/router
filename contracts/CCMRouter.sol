@@ -1,3 +1,4 @@
+// Router contract of:
 //  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄       ▄▄       ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄    ▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄        ▄ 
 // ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░▌     ▐░░▌     ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌  ▐░▌▐░░░░░░░░░░░▌▐░░▌      ▐░▌
 // ▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌░▌   ▐░▐░▌      ▀▀▀▀█░█▀▀▀▀ ▐░█▀▀▀▀▀▀▀█░▌▐░▌ ▐░▌ ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌░▌     ▐░▌
@@ -22,11 +23,6 @@
 // - Github: https://github.com/orgs/crypto-contract-management/repositories
 // - Telegram: 
 // - Twitter: https://twitter.com/ccmtoken
-//
-// Initial tokenomics:
-// - 5% buy fee split up into DEV/Marketing, bnb rewards, auto liquidity
-// - 10%-15% sell fee with an individual extra 15% sell fee if wallets induce a high price drop. Same split as above
-// - Our goal is to recude fees dramatically over the course of the project
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;

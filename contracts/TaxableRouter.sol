@@ -74,7 +74,7 @@ abstract contract TaxableRouter is OwnableUpgradeable, ReentrancyGuardUpgradeabl
         // | Beginner   | 0             | 1%            |
         // | Apprentice | 5             | 0.5%          |
         // | Expert     | 10            | 0.3%          |
-        // | Master     | ask us!       | 0%            |
+        // | Master     | Ask us!       | 0%            |
         // ----------------------------------------------
         // The tier you get solely depends on the BNB you send in.
         // Your tier level CAN be changed later. Just call the method again.
