@@ -21,9 +21,8 @@
 // Socials:
 // - Website: https://ccmtoken.tech
 // - Github: https://github.com/orgs/crypto-contract-management/repositories
-// - Telegram: 
+// - Telegram: https://t.me/CCMGlobal
 // - Twitter: https://twitter.com/ccmtoken
-
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;

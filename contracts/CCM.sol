@@ -21,7 +21,7 @@
 // Socials:
 // - Website: https://ccmtoken.tech
 // - Github: https://github.com/orgs/crypto-contract-management/repositories
-// - Telegram: 
+// - Telegram: https://t.me/CCMGlobal
 // - Twitter: https://twitter.com/ccmtoken
 // Initial tokenomics:
 // - 5% buy fee split up into DEV/Marketing, bnb rewards, auto liquidity

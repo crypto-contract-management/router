@@ -19,7 +19,10 @@ const config: HardhatUserConfig = {
     },
   },
   gasReporter: {
-    enabled: true
+    enabled: true,
+    coinmarketcap: "f34c1bdd-9b6b-427a-ada4-09517ba1e365",
+    token: "BNB",
+    gasPriceApi: "https://api.bscscan.com/api?module=proxy&action=eth_gasPrice"
   },
   networks: {
     hardhat: {
@@ -42,7 +45,8 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
       apiKey: {
-          bscTestnet: '4SM3MYR8D3PIFFA1I913FIUPK83S3BT7UJ'
+          bscTestnet: '4SM3MYR8D3PIFFA1I913FIUPK83S3BT7UJ',
+          bsc: '4SM3MYR8D3PIFFA1I913FIUPK83S3BT7UJ'
       }
   },
   paths: {

@@ -21,7 +21,7 @@
 // Socials:
 // - Website: https://ccmtoken.tech
 // - Github: https://github.com/orgs/crypto-contract-management/repositories
-// - Telegram: 
+// - Telegram: https://t.me/CCMGlobal
 // - Twitter: https://twitter.com/ccmtoken
 
 // SPDX-License-Identifier: MIT
@@ -52,7 +52,7 @@ contract CCMRouter is TaxableRouter, UUPSUpgradeable {
     // List of taxable tokens.
     mapping(address => bool) public taxableToken;
     // Data differing between test and live chain
-    //bytes32 constant pcsPairInitHash = hex"3a8a968e398c9691c40a1f5833d775b822e80b01691cf647d10960571ac84af0";
+    //bytes32 constant pcsPairInitHash = hex"3a8a968e398c9691c40a1f5833d775b822e80b01691cf647d10960571ac84af0"; // local
     //bytes32 constant pcsPairInitHash = hex"ecba335299a6693cb2ebc4782e74669b84290b6378ea3a3873c7231a8d7d1074"; // testnet
     bytes32 constant pcsPairInitHash = hex"00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5"; // live net
 

@@ -201,7 +201,7 @@ describe("CCM", () => {
             pairAddress = await createPair(ccmContract, MyWBNBContract);
             // Set up token economy.
             await routerContract.claimInitialFeeOwnership(ccmContract.address);
-            await routerContract.chooseTaxTierLevel(ccmContract.address, {value: parseEther("0.5")});
+            await routerContract.chooseTaxTierLevel(ccmContract.address, {value: parseEther("5")});
             await ccmContract.setPairAddress(pairAddress);
         });
         it("Default deploy settings", async() => {
@@ -328,7 +328,7 @@ describe("CCM", () => {
             pairAddress = await createPair(ccmContract, MyWBNBContract);
             // Set up token economy.
             await routerContract.claimInitialFeeOwnership(ccmContract.address);
-            await routerContract.chooseTaxTierLevel(ccmContract.address, {value: parseEther("0.5")});
+            await routerContract.chooseTaxTierLevel(ccmContract.address, {value: parseEther("5")});
             await ccmContract.setPairAddress(pairAddress);
             await ccmContract.setExcludedFromDividend(clarice.address, true);
             await ccmContract.setMinTokensForDividends(parseEther("10"));

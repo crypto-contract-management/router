@@ -27,7 +27,17 @@ async function main() {
     console.log("CCMT: ", ccmt.address);
     //console.log("Test contract at: ", testContract.address);
     //console.log("Test contract 2 at: ", testContract2.address);
-  } 
+  } else if(hre.network.name == "bsc_mainnet") {
+    const pcsFactoryAddress = "0xca143ce32fe78f1f7019d7d551a6402fc5350c73";
+    const pcsRouterAddress = "0x10ed43c718714eb63d5aa57b78b54704e256024e";
+    const wbnbAddress = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c";
+    router = await (await upgrades.deployProxy(routerFactory, [pcsRouterAddress, pcsFactoryAddress, wbnbAddress], { kind: "uups"})).deployed() as CCMRouter;
+    ccmt = await (await upgrades.deployProxy(ccmtFactory, [router.address, wbnbAddress], { kind: "uups"})).deployed() as CryptoContractManagement;
+    //testContract = await (await tokenFactory.deploy(router.address)).deployed() as TestContract;
+    //testContract2 = await (await tokenFactory.deploy(router.address)).deployed() as TestContract;
+    console.log("Router contract at: ", router.address);
+    console.log("CCMT: ", ccmt.address);
+  }
   else {
       console.error("Inavlid Network");
       process.exit(1);

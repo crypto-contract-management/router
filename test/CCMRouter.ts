@@ -632,7 +632,7 @@ describe("CCM", () => {
             // Total of buys/sells is 100 bnb, with apprentice (0.5% tax) This makes 0.5 bnb for us/the router.
             const contractBalanceBefore = await MyWBNBContract.balanceOf(routerContract.address);
             const routerETHBefore = await routerContract.provider.getBalance(routerContract.address);
-            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("0.5")});
+            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("5")});
 
             await routerByAlice.swapExactETHForTokens(
                 0, [MyWBNBContract.address, testContract.address], 
@@ -686,14 +686,14 @@ describe("CCM", () => {
             // This is what the contract itself tracked it should have earned.
             // Those two have to match of course. And both need to tell 0.5 bnb.
             const expectedETHEarned = parseEther("0.5");
-            const expectedETHTaxEarned = parseEther("0.5");
+            const expectedETHTaxEarned = parseEther("5");
 
             expect(contractETHEarned).eq(expectedETHEarned);
             expect(routerETHEarned).eq(expectedETHTaxEarned);
         });
         it("Tax tier level expert", async() => {
             const routerETHBefore = await routerContract.provider.getBalance(routerContract.address);
-            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("1")});
+            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("10")});
             const routerETHEarned = (await routerContract.provider.getBalance(routerContract.address)).sub(routerETHBefore);
             // Just buy and sell as above.
             // Total of buys/sells is 100 bnb, with apprentice (0.3% tax) This makes 0.3 bnb for us/the router.
@@ -748,7 +748,7 @@ describe("CCM", () => {
             // This is what the contract itself tracked it should have earned.
             // Those two have to match of course. And both need to tell 0.3 bnb.
             const expectedETHEarned = parseEther("0.3");
-            const expectedETHTaxEarned = parseEther("1.0");
+            const expectedETHTaxEarned = parseEther("10");
 
             expect(contractETHEarned).eq(expectedETHEarned);
             expect(routerETHEarned).eq(expectedETHTaxEarned);
@@ -1013,7 +1013,7 @@ describe("CCM", () => {
             expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore.add(expectedBalanceIncrease));
         });
         it("Withdraw ETH that has been gathered for trades of 0.3% fee", async() => {
-            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("1")});
+            await routerContract.chooseTaxTierLevel(testContract.address, {value: parseEther("10")});
             const aliceBefore = await testContract.balanceOf(alice.address);
             await routerByAlice.swapExactETHForTokens(
                 0, [MyWBNBContract.address, testContract.address], alice.address, await getTime(),
@@ -1062,7 +1062,7 @@ describe("CCM", () => {
             // Also we sent in 1 eth initially to active fees, so plus that!
             const expectedBalanceIncrease = (parseEther("15").mul(3).div(1000)).add(bobETHFromSell.mul(3).div(1000)).add(aliceETHFromSell.mul(3).div(1000));
             expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore.add(expectedBalanceIncrease));
-            expect(ownerEthGained).to.eq(parseEther("1").sub(txnCost).sub(txn2Cost));
+            expect(ownerEthGained).to.eq(parseEther("10").sub(txnCost).sub(txn2Cost));
         });
         it("Only owner", async() => {
             await expect(routerByAlice.withdrawAnyERC20Token(ethAddress)).to.be.revertedWith("Ownable: caller is not the owner");
